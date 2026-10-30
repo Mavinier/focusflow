@@ -28,6 +28,32 @@ export type WeeklyGoalProgress = {
   progressPercent: number
 }
 
+export type FocusSessionRow = {
+  activityDate: string
+  activityName: string
+  color: string
+  durationMinutes: number
+  startedAt: string | null
+  endedAt: string | null
+  note: string | null
+}
+
+export type DailyNoteRow = {
+  activityDate: string
+  note: string
+}
+
+export type WeeklyGoalRow = {
+  weekStart: string
+  targetMinutes: number
+}
+
+export type SessionsResponse = {
+  year: number
+  sessions: FocusSessionRow[]
+  notes: DailyNoteRow[]
+}
+
 export async function fetchDashboard(year: number): Promise<DayData> {
   const response = await fetch(`/api/dashboard?year=${year}`)
 
@@ -60,6 +86,27 @@ export async function createFocusSession(input: CreateFocusSessionInput) {
     const data = (await response.json().catch(() => null)) as { error?: string } | null
     throw new Error(data?.error ?? 'Unable to save activity.')
   }
+}
+
+export async function fetchSessions(year: number): Promise<SessionsResponse> {
+  const response = await fetch(`/api/sessions?year=${year}`)
+
+  if (!response.ok) {
+    throw new Error('Unable to load session data.')
+  }
+
+  return (await response.json()) as SessionsResponse
+}
+
+export async function fetchWeeklyGoals(year: number): Promise<WeeklyGoalRow[]> {
+  const response = await fetch(`/api/weekly-goals?year=${year}`)
+
+  if (!response.ok) {
+    throw new Error('Unable to load weekly goals.')
+  }
+
+  const data = (await response.json()) as { year: number; goals: WeeklyGoalRow[] }
+  return data.goals
 }
 
 export async function fetchWeeklyGoal(date: string): Promise<WeeklyGoalProgress> {

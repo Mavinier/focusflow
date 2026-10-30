@@ -7,6 +7,7 @@ import {
   Sparkles,
   Target,
 } from 'lucide-react'
+import { NavLink } from 'react-router-dom'
 import type { WeeklyGoalProgress } from '../api/activityApi'
 import { formatDuration } from '../utils/tracker'
 
@@ -33,18 +34,18 @@ function Sidebar({ weeklyProgress, onEditWeeklyGoal }: SidebarProps) {
       </button>
 
       <nav className="main-nav" aria-label="Main navigation">
-        <a className="nav-item active" href="#overview">
+        <NavLink className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`} end to="/">
           <LayoutGrid size={17} />
           Overview
-        </a>
-        <a className="nav-item" href="#insights">
+        </NavLink>
+        <NavLink className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`} to="/insights">
           <BarChart3 size={17} />
           Insights
-        </a>
-        <a className="nav-item" href="#goals">
+        </NavLink>
+        <NavLink className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`} to="/goals">
           <Target size={17} />
           Goals
-        </a>
+        </NavLink>
       </nav>
 
       <div className="sidebar-bottom">
@@ -62,10 +63,10 @@ function Sidebar({ weeklyProgress, onEditWeeklyGoal }: SidebarProps) {
               : `${formatDuration(Math.abs(weeklyProgress.remainingMinutes))} over your goal`}
           </p>
         </button>
-        <a className="nav-item" href="#settings">
+        <NavLink className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`} to="/settings">
           <Settings size={17} />
           Settings
-        </a>
+        </NavLink>
         <div className="user-chip">
           <div className="avatar">MM</div>
           <div>

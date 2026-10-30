@@ -1,4 +1,5 @@
 import { ArrowUpRight, Sparkles } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import type { FocusMixItem } from '../utils/analytics'
 import { formatDuration } from '../utils/tracker'
 
@@ -28,9 +29,9 @@ function InsightCards({ focusMix }: InsightCardsProps) {
             </div>
             <p>Where your time went this year.</p>
           </div>
-          <button className="text-button" type="button">
+          <Link className="text-button" to="/insights">
             View insights <ArrowUpRight size={14} />
-          </button>
+          </Link>
         </div>
         <div className="focus-mix" role="list" aria-label="Focus time by activity">
           {focusMix.length > 0 ? (

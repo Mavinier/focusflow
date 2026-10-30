@@ -208,3 +208,254 @@
   font-size: 9px;
   font-weight: 400;
 }
+
+.period-toggle {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.period-button.active {
+  color: #15200e;
+  border-color: var(--lime);
+  background: var(--lime);
+}
+
+.insight-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.insight-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 19px;
+  margin-bottom: 19px;
+}
+
+.insight-card {
+  min-width: 0;
+  padding: 24px 25px;
+}
+
+.insight-empty {
+  margin: 0;
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.insight-bars,
+.plan-list {
+  display: grid;
+  gap: 11px;
+}
+
+.insight-bar-row,
+.plan-row {
+  display: grid;
+  grid-template-columns: minmax(88px, 0.9fr) minmax(0, 1.6fr) minmax(72px, 0.7fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.insight-bar-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.insight-bar-label i {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.insight-bar-track,
+.plan-track {
+  position: relative;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #22324a;
+}
+
+.insight-bar-track span,
+.plan-actual {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--lime);
+}
+
+.insight-bar-value {
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  text-align: right;
+}
+
+.insight-bar-value small {
+  display: block;
+  color: var(--faint);
+  font-size: 8px;
+}
+
+.insight-columns {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+  min-height: 140px;
+}
+
+.hour-columns {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.insight-column {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 18px;
+  height: 140px;
+}
+
+.insight-column-bar {
+  display: block;
+  width: 100%;
+  max-width: 18px;
+  margin-top: auto;
+  border-radius: 4px 4px 2px 2px;
+  background: var(--lime);
+}
+
+.insight-column span:last-child {
+  color: var(--faint);
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+}
+
+.plan-target {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 13px;
+  background: var(--peach);
+}
+
+.insight-stats {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.insight-stats li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.insight-stats strong {
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.session-list,
+.note-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.session-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.session-list i {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.session-list div {
+  min-width: 0;
+  flex: 1;
+}
+
+.session-list strong,
+.note-list p {
+  display: block;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.session-list span,
+.note-list span {
+  color: var(--faint);
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+}
+
+.session-list em {
+  color: var(--lime);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-style: normal;
+}
+
+.note-list p {
+  margin: 4px 0 0;
+  line-height: 1.4;
+}
+
+.highlights-card {
+  margin-bottom: 8px;
+}
+
+.highlight-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.highlight-grid article {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.highlight-grid strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--lime);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.highlight-grid p {
+  margin: 0;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.35;
+}

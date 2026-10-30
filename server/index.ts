@@ -162,6 +162,82 @@ app.get('/api/activities', (_request, response) => {
   response.json(db.select().from(activities).orderBy(asc(activities.name)).all())
 })
 
+app.get('/api/sessions', (request, response) => {
+  const year = String(request.query.year ?? '2026')
+
+  if (!/^\d{4}$/.test(year)) {
+    response.status(400).json({ error: 'year must be a four-digit value' })
+    return
+  }
+
+  const from = `${year}-01-01`
+  const to = `${year}-12-31`
+  const sessions = db
+    .select({
+      activityDate: focusSessions.activityDate,
+      activityName: activities.name,
+      color: activities.color,
+      durationMinutes: focusSessions.durationMinutes,
+      startedAt: focusSessions.startedAt,
+      endedAt: focusSessions.endedAt,
+      note: focusSessions.note,
+    })
+    .from(focusSessions)
+    .innerJoin(activities, eq(focusSessions.activityId, activities.id))
+    .where(
+      and(
+        gte(focusSessions.activityDate, from),
+        lte(focusSessions.activityDate, to),
+      ),
+    )
+    .orderBy(asc(focusSessions.activityDate), asc(focusSessions.id))
+    .all()
+  const notes = db
+    .select({
+      activityDate: dailyNotes.activityDate,
+      note: dailyNotes.note,
+    })
+    .from(dailyNotes)
+    .where(
+      and(
+        gte(dailyNotes.activityDate, from),
+        lte(dailyNotes.activityDate, to),
+      ),
+    )
+    .orderBy(asc(dailyNotes.activityDate))
+    .all()
+
+  response.json({ year: Number(year), sessions, notes })
+})
+
+app.get('/api/weekly-goals', (request, response) => {
+  const year = String(request.query.year ?? '2026')
+
+  if (!/^\d{4}$/.test(year)) {
+    response.status(400).json({ error: 'year must be a four-digit value' })
+    return
+  }
+
+  const from = `${Number(year) - 1}-12-01`
+  const to = `${year}-12-31`
+  const goals = db
+    .select({
+      weekStart: weeklyGoals.weekStart,
+      targetMinutes: weeklyGoals.targetMinutes,
+    })
+    .from(weeklyGoals)
+    .where(
+      and(
+        gte(weeklyGoals.weekStart, from),
+        lte(weeklyGoals.weekStart, to),
+      ),
+    )
+    .orderBy(asc(weeklyGoals.weekStart))
+    .all()
+
+  response.json({ year: Number(year), goals })
+})
+
 app.get('/api/dashboard', (request, response) => {
   const year = String(request.query.year ?? '2026')
 

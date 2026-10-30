@@ -1,19 +1,19 @@
-import { Flame } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import {
   fetchDashboard,
   fetchWeeklyGoal,
   type WeeklyGoalProgress,
 } from './api/activityApi'
-import ActivityHeatmap from './components/ActivityHeatmap'
 import ActivityFormModal from './components/ActivityFormModal'
-import DayDetail from './components/DayDetail'
-import InsightCards from './components/InsightCards'
+import InsightsPage from './components/InsightsPage'
+import OverviewPage from './components/OverviewPage'
+import PlaceholderPage from './components/PlaceholderPage'
 import Sidebar from './components/Sidebar'
-import StatCards from './components/StatCards'
 import Topbar from './components/Topbar'
 import WeeklyGoalModal from './components/WeeklyGoalModal'
 import { LAST_TRACKED_DATE, TRACKING_YEAR } from './data/activityData'
+import type { AppOutletContext } from './types/app'
 import type { DayData } from './types/tracker'
 import { buildFocusMix, calculateActiveStreak } from './utils/analytics'
 
@@ -25,7 +25,7 @@ const initialWeeklyProgress: WeeklyGoalProgress = {
   progressPercent: 0,
 }
 
-function App() {
+function AppLayout() {
   const [selectedDate, setSelectedDate] = useState(LAST_TRACKED_DATE)
   const [dayData, setDayData] = useState<DayData>({})
   const [isLoading, setIsLoading] = useState(true)
@@ -82,6 +82,22 @@ function App() {
     setIsWeeklyGoalModalOpen(false)
   }
 
+  const outletContext: AppOutletContext = {
+    activeDaysCount: activeDays.length,
+    currentStreak,
+    dataVersion,
+    dayData,
+    error,
+    focusMix,
+    isLoading,
+    onAddEntry: () => setIsActivityModalOpen(true),
+    selectedDate,
+    selectedRecord,
+    setSelectedDate,
+    totalTrackedMinutes,
+    weeklyProgress,
+  }
+
   return (
     <div className="app-shell">
       <Sidebar
@@ -89,48 +105,9 @@ function App() {
         weeklyProgress={weeklyProgress}
       />
 
-      <main className="main-content" id="overview">
+      <main className="main-content">
         <Topbar onLogActivity={() => setIsActivityModalOpen(true)} />
-
-        <div className="page-content">
-          <section className="intro">
-            <div>
-              <p className="eyebrow">Friday, October 30, 2026</p>
-              <h1>Your focus, in motion.</h1>
-              <p className="intro-copy">
-                A clear picture of the work and learning that moves you forward.
-              </p>
-              {isLoading && <p className="data-status">Loading your SQLite activity data…</p>}
-              {error && <p className="data-status error">{error} Start the API with <code>npm run dev</code>.</p>}
-            </div>
-            <div className="streak-pill">
-              <Flame size={16} />
-              <span><strong>{currentStreak}</strong> day streak</span>
-            </div>
-          </section>
-
-          <StatCards
-            activeDaysCount={activeDays.length}
-            topFocus={focusMix[0]}
-            totalTrackedMinutes={totalTrackedMinutes}
-          />
-
-          <section className="tracker-layout">
-            <ActivityHeatmap
-              activeDaysCount={activeDays.length}
-              dayData={dayData}
-              onSelectDate={setSelectedDate}
-              selectedDate={selectedDate}
-            />
-            <DayDetail
-              onAddEntry={() => setIsActivityModalOpen(true)}
-              selectedDate={selectedDate}
-              selectedRecord={selectedRecord}
-            />
-          </section>
-
-          <InsightCards focusMix={focusMix} />
-        </div>
+        <Outlet context={outletContext} />
       </main>
 
       <ActivityFormModal
@@ -147,6 +124,40 @@ function App() {
         progress={weeklyProgress}
       />
     </div>
+  )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<OverviewPage />} />
+          <Route path="/insights" element={<InsightsPage />} />
+          <Route
+            path="/goals"
+            element={
+              <PlaceholderPage
+                copy="Weekly and monthly targets will live here. Use the sidebar card to edit this week’s focus goal."
+                eyebrow="Coming soon"
+                title="Goals"
+              />
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <PlaceholderPage
+                copy="Preferences and activity management will live here in a later pass."
+                eyebrow="Coming soon"
+                title="Settings"
+              />
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   )
 }
 
