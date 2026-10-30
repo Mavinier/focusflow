@@ -1,0 +1,255 @@
+.modal-backdrop {
+  position: fixed;
+  z-index: 10;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  inset: 0;
+  padding: 20px;
+  background: rgba(4, 8, 17, 0.74);
+  backdrop-filter: blur(7px);
+}
+
+.activity-modal {
+  width: min(500px, 100%);
+  padding: 25px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: #111d30;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+}
+
+.modal-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-header .eyebrow {
+  margin-bottom: 8px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: var(--text);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 21px;
+  letter-spacing: -0.045em;
+}
+
+.modal-header p:last-child {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.modal-close {
+  display: grid;
+  width: 29px;
+  height: 29px;
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 7px;
+  background: transparent;
+}
+
+.modal-close:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.activity-form {
+  display: grid;
+  gap: 17px;
+  padding-top: 21px;
+}
+
+.activity-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.activity-form input,
+.activity-form textarea {
+  width: 100%;
+  padding: 10px 11px;
+  color: var(--text);
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  outline: 0;
+  background: #0d182a;
+  font-size: 11px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.activity-form input {
+  height: 38px;
+}
+
+.activity-form textarea {
+  min-height: 76px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.activity-form input::placeholder,
+.activity-form textarea::placeholder {
+  color: var(--faint);
+}
+
+.activity-form input:focus,
+.activity-form textarea:focus {
+  border-color: rgba(216, 242, 107, 0.65);
+  box-shadow: 0 0 0 3px rgba(216, 242, 107, 0.08);
+}
+
+.activity-form input[type='date'],
+.activity-form input[type='time'] {
+  color-scheme: dark;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.duration-preview-field {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.duration-preview {
+  display: flex;
+  align-items: center;
+  height: 38px;
+  padding: 0 11px;
+  color: var(--lime);
+  border: 1px solid rgba(216, 242, 107, 0.24);
+  border-radius: 7px;
+  background: rgba(216, 242, 107, 0.06);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+}
+
+.goal-hours-input {
+  position: relative;
+}
+
+.goal-hours-input input {
+  padding-right: 54px;
+}
+
+.goal-hours-input span {
+  position: absolute;
+  top: 50%;
+  right: 11px;
+  color: var(--faint);
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.goal-progress-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  color: var(--faint);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.025);
+  font-size: 10px;
+}
+
+.goal-progress-summary strong {
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.optional-label {
+  color: var(--faint);
+  font-size: 9px;
+  font-weight: 400;
+}
+
+.form-error {
+  margin: -3px 0 0;
+  color: var(--peach);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 3px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.cancel-button,
+.save-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 35px;
+  padding: 0 13px;
+  cursor: pointer;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.cancel-button {
+  color: var(--muted);
+  border: 1px solid var(--line-strong);
+  background: transparent;
+}
+
+.cancel-button:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.save-button {
+  color: #15200e;
+  background: var(--lime);
+}
+
+.save-button:hover:not(:disabled) {
+  background: #e3f889;
+  box-shadow: 0 4px 20px rgba(216, 242, 107, 0.13);
+}
+
+.save-button:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

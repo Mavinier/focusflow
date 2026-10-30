@@ -1,0 +1,166 @@
+@media (max-width: 1120px) {
+  .sidebar {
+    width: 210px;
+  }
+
+  .main-content {
+    width: calc(100% - 210px);
+    margin-left: 210px;
+  }
+
+  .topbar,
+  .page-content {
+    padding-right: 28px;
+    padding-left: 28px;
+  }
+
+  .tracker-layout {
+    grid-template-columns: minmax(0, 1.4fr) minmax(290px, 0.85fr);
+  }
+}
+
+@media (max-width: 860px) {
+  .sidebar {
+    position: relative;
+    width: 62px;
+    padding: 20px 12px;
+  }
+
+  .brand {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .brand span,
+  .nav-item,
+  .sidebar-bottom {
+    display: none;
+  }
+
+  .main-nav {
+    display: grid;
+    margin-top: 48px;
+  }
+
+  .main-nav .nav-item {
+    display: flex;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .main-nav .nav-item svg {
+    margin: 0;
+  }
+
+  .main-content {
+    width: calc(100% - 62px);
+    margin-left: 62px;
+  }
+
+  .tracker-layout,
+  .bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-card {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 620px) {
+  .topbar {
+    min-height: 64px;
+    padding: 0 17px;
+  }
+
+  .breadcrumb {
+    display: none;
+  }
+
+  .topbar-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .topbar-actions .icon-button {
+    margin-right: auto;
+  }
+
+  .outline-button {
+    padding: 0 8px;
+  }
+
+  .primary-button {
+    padding: 0 10px;
+  }
+
+  .page-content {
+    padding: 28px 17px 42px;
+  }
+
+  .intro {
+    display: block;
+  }
+
+  .streak-pill {
+    display: inline-flex;
+    margin-top: 18px;
+  }
+
+  .stat-grid {
+    gap: 8px;
+  }
+
+  .stat-card {
+    display: block;
+    min-height: 0;
+    padding: 13px;
+  }
+
+  .stat-icon {
+    width: 27px;
+    height: 27px;
+    margin-bottom: 10px;
+  }
+
+  .stat-card strong {
+    font-size: 17px;
+  }
+
+  .stat-card small {
+    display: none;
+  }
+
+  .stat-label {
+    font-size: 9px;
+  }
+
+  .heatmap-card,
+  .detail-card,
+  .focus-card,
+  .quote-card {
+    padding: 18px;
+  }
+
+  .card-heading {
+    margin-bottom: 22px;
+  }
+
+  .period-button {
+    padding: 0 8px;
+    font-size: 10px;
+  }
+
+  .quote-card {
+    flex-direction: column;
+    min-height: 145px;
+  }
+
+  .focus-legend {
+    gap: 10px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}

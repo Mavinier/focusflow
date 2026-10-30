@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+:root {
+  color: #e7ecf5;
+  background: #09101e;
+  font-family: 'DM Sans', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --canvas: #09101e;
+  --sidebar: #0c1526;
+  --surface: #111c2e;
+  --surface-raised: #162338;
+  --surface-soft: #132035;
+  --line: rgba(180, 201, 235, 0.11);
+  --line-strong: rgba(180, 201, 235, 0.19);
+  --text: #ecf2fb;
+  --muted: #8d9bb2;
+  --faint: #64718a;
+  --lime: #d8f26b;
+  --green: #7ed6c0;
+  --purple: #c2a6ff;
+  --peach: #f5b97d;
+  --pink: #ff9eaa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 84% -10%, rgba(76, 108, 171, 0.1), transparent 32rem),
+    var(--canvas);
+}
+
+button,
+a {
+  font: inherit;
+}
+
+button {
+  border: 0;
+}
+
+button,
+a,
+.activity-cell {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+.activity-cell:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 3px;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
