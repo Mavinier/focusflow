@@ -1,0 +1,28 @@
+Currently:
+
+Insights in the sidebar only scrolls to the #insights section at the bottom of the overview page.
+View insights is a placeholder button with no click behavior.
+Only Overview remains highlighted; the active state does not change.
+Goals and Settings currently point to sections that do not exist.
+A useful Insights page could include:
+
+Focus time by activity: Java, SQL, NoSQL, work, etc.
+Daily, weekly, and monthly focus trends.
+Most productive days and hours.
+Activity consistency and streak history.
+Goal completion rate.
+Comparison between planned and actual focus time.
+Activity distribution by weekday.
+Recent notes and achievements.
+Longest focus sessions.
+Areas that are receiving too little attention.
+The existing SQLite data is enough for most of this. We can derive the metrics from focus_sessions; no new table is required unless we later add manual goals, tags, or productivity ratings.
+
+Recommended structure:
+
+/ — Overview dashboard
+/insights — detailed analytics page
+/goals — weekly/monthly goals
+/settings — preferences and activity management
+The next implementation should make both highlighted controls navigate to /insights, create a dedicated InsightsPage component, and update the sidebar active state based on the current page.
+
