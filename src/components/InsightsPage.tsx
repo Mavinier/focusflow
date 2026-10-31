@@ -1,5 +1,5 @@
-import { Flame } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { Flame, Ruler } from 'lucide-react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import {
   fetchSessions,
@@ -9,7 +9,6 @@ import {
   type WeeklyGoalRow,
 } from '../api/activityApi'
 import type { AppOutletContext } from '../types/app'
-import { LAST_TRACKED_DATE, TRACKING_YEAR } from '../data/activityData'
 import {
   buildHighlights,
   buildTrend,
@@ -31,7 +30,12 @@ import {
   weekdayDistribution,
   type InsightPeriod,
 } from '../utils/insights'
-import { formatDuration, formatShortDate } from '../utils/tracker'
+import {
+  formatDuration,
+  formatShortDate,
+  getTodayDateKey,
+  getYearReferenceDate,
+} from '../utils/tracker'
 
 const PERIODS: { id: InsightPeriod; label: string }[] = [
   { id: 'week', label: 'Week' },
@@ -40,8 +44,11 @@ const PERIODS: { id: InsightPeriod; label: string }[] = [
 ]
 
 function InsightsPage() {
-  const { currentStreak, dataVersion } = useOutletContext<AppOutletContext>()
+  const { currentStreak, dataVersion, selectedYear } = useOutletContext<AppOutletContext>()
+  const today = getTodayDateKey()
+  const referenceDate = getYearReferenceDate(selectedYear, today)
   const [period, setPeriod] = useState<InsightPeriod>('year')
+  const [showChartScale, setShowChartScale] = useState(true)
   const [sessions, setSessions] = useState<FocusSessionRow[]>([])
   const [notes, setNotes] = useState<DailyNoteRow[]>([])
   const [goals, setGoals] = useState<WeeklyGoalRow[]>([])
@@ -52,7 +59,7 @@ function InsightsPage() {
     let cancelled = false
     setIsLoading(true)
 
-    Promise.all([fetchSessions(TRACKING_YEAR), fetchWeeklyGoals(TRACKING_YEAR)])
+    Promise.all([fetchSessions(selectedYear), fetchWeeklyGoals(selectedYear)])
       .then(([sessionData, weeklyGoals]) => {
         if (cancelled) return
         setSessions(sessionData.sessions)
@@ -72,17 +79,17 @@ function InsightsPage() {
     return () => {
       cancelled = true
     }
-  }, [dataVersion])
+  }, [dataVersion, selectedYear])
 
-  const range = useMemo(() => getPeriodRange(period, LAST_TRACKED_DATE), [period])
+  const range = useMemo(() => getPeriodRange(period, referenceDate), [period, referenceDate])
   const periodSessions = useMemo(
     () => sliceSessions(sessions, range.from, range.to),
     [sessions, range],
   )
   const mix = useMemo(() => mixFromSessions(periodSessions), [periodSessions])
   const trend = useMemo(
-    () => buildTrend(periodSessions, period, LAST_TRACKED_DATE),
-    [periodSessions, period],
+    () => buildTrend(periodSessions, period, referenceDate),
+    [periodSessions, period, referenceDate],
   )
   const productiveDays = useMemo(() => topDays(periodSessions), [periodSessions])
   const hours = useMemo(() => hourHistogram(periodSessions), [periodSessions])
@@ -101,7 +108,11 @@ function InsightsPage() {
   )
   const longSessions = useMemo(() => longestSessions(periodSessions), [periodSessions])
   const notesList = useMemo(
-    () => recentNotes(notes.filter((note) => note.activityDate >= range.from && note.activityDate <= range.to), periodSessions),
+    () => recentNotes(
+      notes.filter((note) => note.activityDate >= range.from && note.activityDate <= range.to),
+      periodSessions,
+      5,
+    ),
     [notes, periodSessions, range],
   )
   const highlights = useMemo(
@@ -137,6 +148,15 @@ function InsightsPage() {
                 {option.label}
               </button>
             ))}
+            <button
+              aria-pressed={showChartScale}
+              className={`period-button scale-toggle${showChartScale ? ' active' : ''}`}
+              type="button"
+              onClick={() => setShowChartScale((visible) => !visible)}
+            >
+              <Ruler size={13} />
+              Scale
+            </button>
           </div>
           {isLoading && <p className="data-status">Loading insights…</p>}
           {error && <p className="data-status error">{error} Start the API with <code>npm run dev</code>.</p>}
@@ -192,6 +212,7 @@ function InsightsPage() {
           </div>
           <BarList
             empty="No activity recorded yet"
+            scrollable
             items={mix.map((activity) => ({
               key: activity.name,
               label: activity.name,
@@ -210,18 +231,29 @@ function InsightsPage() {
               <h2>{period === 'week' ? 'Daily' : period === 'month' ? 'Weekly' : 'Monthly'} focus</h2>
             </div>
           </div>
-          <div className="insight-columns" role="img" aria-label="Focus trend">
+          <ChartArea ariaLabel="Focus trend" max={maxTrend} showScale={showChartScale}>
             {trend.map((point) => (
-              <div className="insight-column" key={point.key}>
-                <span
-                  className="insight-column-bar"
-                  style={{ height: `${Math.max((point.minutes / maxTrend) * 100, point.minutes ? 4 : 0)}%` }}
-                  title={`${point.label}: ${formatDuration(point.minutes)}`}
-                />
+              <div
+                className="insight-column"
+                key={point.key}
+                tabIndex={0}
+                aria-label={`${point.label}: ${formatDuration(point.minutes)} focused`}
+              >
+                <div className="insight-bar-slot">
+                  <span
+                    className="insight-column-bar"
+                    style={{ height: `${Math.max((point.minutes / maxTrend) * 100, point.minutes ? 4 : 0)}%` }}
+                    title={`${point.label}: ${formatDuration(point.minutes)}`}
+                  />
+                  <span className="chart-tooltip" role="tooltip">
+                    <strong>{point.label}</strong>
+                    <small>{formatDuration(point.minutes)} focused</small>
+                  </span>
+                </div>
                 <span>{point.label}</span>
               </div>
             ))}
-          </div>
+          </ChartArea>
         </article>
       </section>
 
@@ -254,18 +286,29 @@ function InsightsPage() {
           {hours.length === 0 ? (
             <p className="insight-empty">Session times are not available.</p>
           ) : (
-            <div className="insight-columns hour-columns" role="img" aria-label="Focus by hour">
+            <ChartArea ariaLabel="Focus by hour" max={maxHour} showScale={showChartScale} className="hour-columns">
               {hours.map((bucket) => (
-                <div className="insight-column" key={bucket.hour}>
-                  <span
-                    className="insight-column-bar"
-                    style={{ height: `${Math.max((bucket.minutes / maxHour) * 100, bucket.minutes ? 4 : 0)}%` }}
-                    title={`${bucket.label}: ${formatDuration(bucket.minutes)}`}
-                  />
+                <div
+                  className="insight-column"
+                  key={bucket.hour}
+                  tabIndex={0}
+                  aria-label={`${bucket.label}: ${formatDuration(bucket.minutes)} focused`}
+                >
+                  <div className="insight-bar-slot">
+                    <span
+                      className="insight-column-bar"
+                      style={{ height: `${Math.max((bucket.minutes / maxHour) * 100, bucket.minutes ? 4 : 0)}%` }}
+                      title={`${bucket.label}: ${formatDuration(bucket.minutes)}`}
+                    />
+                    <span className="chart-tooltip" role="tooltip">
+                      <strong>{bucket.label}</strong>
+                      <small>{formatDuration(bucket.minutes)} focused</small>
+                    </span>
+                  </div>
                   <span>{bucket.label}</span>
                 </div>
               ))}
-            </div>
+            </ChartArea>
           )}
         </article>
       </section>
@@ -278,18 +321,29 @@ function InsightsPage() {
               <h2>Activity by weekday</h2>
             </div>
           </div>
-          <div className="insight-columns" role="img" aria-label="Focus by weekday">
+          <ChartArea ariaLabel="Focus by weekday" max={maxWeekday} showScale={showChartScale}>
             {weekdays.map((day) => (
-              <div className="insight-column" key={day.label}>
-                <span
-                  className="insight-column-bar"
-                  style={{ height: `${Math.max((day.minutes / maxWeekday) * 100, day.minutes ? 4 : 0)}%` }}
-                  title={`${day.label}: ${formatDuration(day.minutes)}`}
-                />
+              <div
+                className="insight-column"
+                key={day.label}
+                tabIndex={0}
+                aria-label={`${day.label}: ${formatDuration(day.minutes)} focused`}
+              >
+                <div className="insight-bar-slot">
+                  <span
+                    className="insight-column-bar"
+                    style={{ height: `${Math.max((day.minutes / maxWeekday) * 100, day.minutes ? 4 : 0)}%` }}
+                    title={`${day.label}: ${formatDuration(day.minutes)}`}
+                  />
+                  <span className="chart-tooltip" role="tooltip">
+                    <strong>{day.label}</strong>
+                    <small>{formatDuration(day.minutes)} focused</small>
+                  </span>
+                </div>
                 <span>{day.label}</span>
               </div>
             ))}
-          </div>
+          </ChartArea>
         </article>
 
         <article className="card insight-card">
@@ -436,7 +490,55 @@ type BarItem = {
   hint?: string
 }
 
-function BarList({ empty, items }: { empty: string; items: BarItem[] }) {
+function ChartArea({
+  ariaLabel,
+  children,
+  className = '',
+  max,
+  showScale,
+}: {
+  ariaLabel: string
+  children: ReactNode
+  className?: string
+  max: number
+  showScale: boolean
+}) {
+  const ticks = [max, max * 0.75, max * 0.5, max * 0.25, 0]
+
+  return (
+    <div className="chart-area">
+      {showScale && (
+        <div className="chart-scale" aria-hidden="true">
+          {ticks.map((tick, index) => (
+            <span key={`${tick}-${index}`}>{formatScaleValue(tick)}</span>
+          ))}
+        </div>
+      )}
+      <div
+        aria-label={ariaLabel}
+        className={`insight-columns chart-bars${className ? ` ${className}` : ''}`}
+        role="img"
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function formatScaleValue(minutes: number) {
+  if (minutes >= 60) return `${Math.round(minutes / 60)}h`
+  return `${Math.round(minutes)}m`
+}
+
+function BarList({
+  empty,
+  items,
+  scrollable = false,
+}: {
+  empty: string
+  items: BarItem[]
+  scrollable?: boolean
+}) {
   const max = Math.max(...items.map((item) => item.minutes), 1)
 
   if (!items.length) {
@@ -444,7 +546,7 @@ function BarList({ empty, items }: { empty: string; items: BarItem[] }) {
   }
 
   return (
-    <div className="insight-bars">
+    <div className={`insight-bars${scrollable ? ' scrollable' : ''}`}>
       {items.map((item) => (
         <div className="insight-bar-row" key={item.key}>
           <span className="insight-bar-label">

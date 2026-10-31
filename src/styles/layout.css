@@ -168,6 +168,10 @@
   color: var(--green);
 }
 
+.stat-card small.stat-change.negative svg {
+  color: var(--pink);
+}
+
 .tracker-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.82fr);

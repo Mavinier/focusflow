@@ -1,4 +1,4 @@
-import { createDayData, LAST_TRACKED_DATE } from '../src/data/activityData'
+import { createDayData, SAMPLE_LAST_TRACKED_DATE } from '../src/data/activityData'
 import { db } from './db/client'
 import { activities, dailyNotes, focusSessions, weeklyGoals } from './db/schema'
 import { DEFAULT_WEEKLY_TARGET_MINUTES, getWeekStart } from './utils/week'
@@ -71,7 +71,7 @@ const existingWeeklyGoal = db.select({ id: weeklyGoals.id }).from(weeklyGoals).l
 if (!existingWeeklyGoal) {
   db.insert(weeklyGoals)
     .values({
-      weekStart: getWeekStart(LAST_TRACKED_DATE),
+      weekStart: getWeekStart(SAMPLE_LAST_TRACKED_DATE),
       targetMinutes: DEFAULT_WEEKLY_TARGET_MINUTES,
     })
     .run()

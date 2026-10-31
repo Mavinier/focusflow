@@ -66,3 +66,14 @@ export function buildFocusMix(dayData: DayData): FocusMixItem[] {
         : 0,
     }))
 }
+
+export function totalMinutesThrough(dayData: DayData, endDate: string) {
+  return Object.values(dayData)
+    .filter((record) => record.date <= endDate)
+    .reduce((total, record) => total + record.totalMinutes, 0)
+}
+
+export function calculatePercentChange(currentMinutes: number, previousMinutes: number) {
+  if (previousMinutes === 0) return null
+  return Math.round(((currentMinutes - previousMinutes) / previousMinutes) * 1000) / 10
+}

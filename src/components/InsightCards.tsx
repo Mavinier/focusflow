@@ -5,9 +5,10 @@ import { formatDuration } from '../utils/tracker'
 
 type InsightCardsProps = {
   focusMix: FocusMixItem[]
+  year: number
 }
 
-function InsightCards({ focusMix }: InsightCardsProps) {
+function InsightCards({ focusMix, year }: InsightCardsProps) {
   return (
     <section className="bottom-grid" id="insights">
       <article className="card quote-card">
@@ -27,7 +28,7 @@ function InsightCards({ focusMix }: InsightCardsProps) {
               <span className="heading-icon peach-icon"><Sparkles size={16} /></span>
               <h2>Focus mix</h2>
             </div>
-            <p>Where your time went this year.</p>
+            <p>Where your time went in {year}.</p>
           </div>
           <Link className="text-button" to="/insights">
             View insights <ArrowUpRight size={14} />

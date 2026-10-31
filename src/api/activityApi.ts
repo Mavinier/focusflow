@@ -65,6 +65,17 @@ export async function fetchDashboard(year: number): Promise<DayData> {
   return data.records
 }
 
+export async function fetchAvailableYears(): Promise<number[]> {
+  const response = await fetch('/api/years')
+
+  if (!response.ok) {
+    throw new Error('Unable to load available years.')
+  }
+
+  const data = (await response.json()) as { years: number[] }
+  return data.years
+}
+
 export async function fetchActivities(): Promise<ActivityOption[]> {
   const response = await fetch('/api/activities')
 

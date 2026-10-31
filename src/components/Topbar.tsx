@@ -2,7 +2,10 @@ import { Bell, CalendarDays, ChevronDown, Plus } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 
 type TopbarProps = {
+  availableYears: number[]
   onLogActivity: () => void
+  onYearChange: (year: number) => void
+  year: number
 }
 
 const PAGE_LABELS: Record<string, string> = {
@@ -12,7 +15,7 @@ const PAGE_LABELS: Record<string, string> = {
   '/settings': 'Settings',
 }
 
-function Topbar({ onLogActivity }: TopbarProps) {
+function Topbar({ availableYears, onLogActivity, onYearChange, year }: TopbarProps) {
   const { pathname } = useLocation()
   const pageLabel = PAGE_LABELS[pathname] ?? 'Activity overview'
 
@@ -28,11 +31,22 @@ function Topbar({ onLogActivity }: TopbarProps) {
           <Bell size={17} />
           <span className="notification-dot" />
         </button>
-        <button className="outline-button" type="button">
+        <label className="outline-button year-selector">
           <CalendarDays size={16} />
-          2026
+          <select
+            aria-label="Select year"
+            className="year-select"
+            value={year}
+            onChange={(event) => onYearChange(Number(event.target.value))}
+          >
+            {availableYears.map((availableYear) => (
+              <option key={availableYear} value={availableYear}>
+                {availableYear}
+              </option>
+            ))}
+          </select>
           <ChevronDown size={15} />
-        </button>
+        </label>
         <button className="primary-button" type="button" onClick={onLogActivity}>
           <Plus size={16} />
           Log activity

@@ -90,6 +90,27 @@
   background: rgba(255, 255, 255, 0.03);
 }
 
+.year-selector {
+  cursor: pointer;
+}
+
+.year-select {
+  min-width: 42px;
+  padding: 0;
+  color: inherit;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  appearance: none;
+}
+
+.year-select option {
+  color: var(--text);
+  background: var(--surface);
+}
+
 .primary-button {
   gap: 8px;
   height: 36px;

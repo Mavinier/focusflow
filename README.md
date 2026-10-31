@@ -14,6 +14,8 @@ streaks, and the yearly focus mix.
 - Weekly focus goal with editable target minutes
 - Actual active-day streak calculation
 - Data-driven focus mix with hover details for hours and active days
+- Multi-year dashboard selector backed by the activity dates in SQLite
+- Same-period-last-year comparison for tracked time
 - Responsive, componentized React UI
 - Automatic colors for new activities from the shared study-area palette
 
@@ -62,6 +64,19 @@ npm run db:setup
 The local database is intentionally ignored by Git. Remove
 `data/focusflow.db` and run `npm run db:setup` to recreate the sample database
 from scratch.
+
+## Years and comparisons
+
+The year selectors include the current year and every year that has activity
+sessions in SQLite. Selecting a year reloads the overview, heatmap, goals, and
+insights for that year. The API already accepts any four-digit year, so logging
+an activity with a date from a new year makes that year available in the
+selector.
+
+The overview's tracked-time comparison uses the same period from the previous
+year. For the current year, this means year-to-date; for a completed year, it
+compares the full calendar year. If there is no data for the previous period,
+the card reports that instead of showing a fabricated percentage.
 
 ## Project structure
 

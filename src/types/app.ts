@@ -4,6 +4,8 @@ import type { DayData, DayRecord } from './tracker'
 
 export type AppOutletContext = {
   activeDaysCount: number
+  availableYears: number[]
+  comparisonPercent: number | null
   currentStreak: number
   dataVersion: number
   dayData: DayData
@@ -11,8 +13,11 @@ export type AppOutletContext = {
   focusMix: FocusMixItem[]
   isLoading: boolean
   onAddEntry: () => void
+  onYearChange: (year: number) => void
+  periodDayCount: number
   selectedDate: string
   selectedRecord: DayRecord | undefined
+  selectedYear: number
   setSelectedDate: (date: string) => void
   totalTrackedMinutes: number
   weeklyProgress: WeeklyGoalProgress

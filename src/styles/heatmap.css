@@ -85,7 +85,7 @@
 .month-labels,
 .week-grid {
   display: grid;
-  grid-template-columns: repeat(53, minmax(9px, 1fr));
+  grid-template-columns: repeat(var(--heatmap-week-count), minmax(9px, 1fr));
   gap: 4px;
 }
 

@@ -4,6 +4,28 @@ export function toDateKey(date: Date) {
   return date.toISOString().slice(0, 10)
 }
 
+export function getTodayDateKey(date = new Date()) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+export function getYearReferenceDate(year: number, today = getTodayDateKey()) {
+  return year === Number(today.slice(0, 4)) ? today : `${year}-12-31`
+}
+
+export function getPreviousYearReferenceDate(year: number, today = getTodayDateKey()) {
+  const referenceDate = getYearReferenceDate(year, today)
+  return `${year - 1}${referenceDate.slice(4)}`
+}
+
+export function countDaysInclusive(from: string, to: string) {
+  const start = new Date(`${from}T12:00:00`)
+  const end = new Date(`${to}T12:00:00`)
+  return Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1)
+}
+
 export function addDays(date: Date, amount: number) {
   const next = new Date(date)
   next.setDate(next.getDate() + amount)

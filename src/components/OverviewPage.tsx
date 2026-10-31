@@ -5,27 +5,36 @@ import ActivityHeatmap from './ActivityHeatmap'
 import DayDetail from './DayDetail'
 import InsightCards from './InsightCards'
 import StatCards from './StatCards'
+import { formatDayHeading, getTodayDateKey } from '../utils/tracker'
 
 function OverviewPage() {
   const {
     activeDaysCount,
+    availableYears,
+    comparisonPercent,
     currentStreak,
     dayData,
     error,
     focusMix,
     isLoading,
     onAddEntry,
+    onYearChange,
+    periodDayCount,
     selectedDate,
     selectedRecord,
+    selectedYear,
     setSelectedDate,
     totalTrackedMinutes,
   } = useOutletContext<AppOutletContext>()
+  const today = getTodayDateKey()
+  const headingDate =
+    selectedYear === Number(today.slice(0, 4)) ? today : `${selectedYear}-12-31`
 
   return (
     <div className="page-content">
       <section className="intro">
         <div>
-          <p className="eyebrow">Friday, October 30, 2026</p>
+          <p className="eyebrow">{formatDayHeading(headingDate)}</p>
           <h1>Your focus, in motion.</h1>
           <p className="intro-copy">
             A clear picture of the work and learning that moves you forward.
@@ -41,16 +50,22 @@ function OverviewPage() {
 
       <StatCards
         activeDaysCount={activeDaysCount}
+        comparisonPercent={comparisonPercent}
+        periodDayCount={periodDayCount}
         topFocus={focusMix[0]}
         totalTrackedMinutes={totalTrackedMinutes}
+        year={selectedYear}
       />
 
       <section className="tracker-layout">
         <ActivityHeatmap
           activeDaysCount={activeDaysCount}
+          availableYears={availableYears}
           dayData={dayData}
           onSelectDate={setSelectedDate}
+          onYearChange={onYearChange}
           selectedDate={selectedDate}
+          year={selectedYear}
         />
         <DayDetail
           onAddEntry={onAddEntry}
@@ -59,7 +74,7 @@ function OverviewPage() {
         />
       </section>
 
-      <InsightCards focusMix={focusMix} />
+      <InsightCards focusMix={focusMix} year={selectedYear} />
     </div>
   )
 }

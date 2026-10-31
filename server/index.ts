@@ -3,10 +3,15 @@ import { and, asc, eq, gte, lte } from 'drizzle-orm'
 import { db } from './db/client'
 import { activities, dailyNotes, focusSessions, weeklyGoals } from './db/schema'
 import { DEFAULT_WEEKLY_TARGET_MINUTES, getWeekEnd, getWeekStart } from './utils/week'
+import { ACTIVITY_COLOR_PALETTE } from '../src/data/activityColors'
 import type { ActivityIconName, DayData } from '../src/types/tracker'
 
 const app = express()
 const port = Number(process.env.PORT ?? 3001)
+
+function getCurrentYear() {
+  return String(new Date().getFullYear())
+}
 
 type SessionTiming =
   | {
@@ -74,6 +79,11 @@ function calculateSessionTiming(
 function parseTime(time: string) {
   const [hours, minutes] = time.split(':').map(Number)
   return hours * 60 + minutes
+}
+
+function getNextActivityColor() {
+  const activityCount = db.select({ id: activities.id }).from(activities).all().length
+  return ACTIVITY_COLOR_PALETTE[activityCount % ACTIVITY_COLOR_PALETTE.length]
 }
 
 app.use(express.json())
@@ -162,8 +172,23 @@ app.get('/api/activities', (_request, response) => {
   response.json(db.select().from(activities).orderBy(asc(activities.name)).all())
 })
 
+app.get('/api/years', (_request, response) => {
+  const years = new Set<number>([new Date().getFullYear()])
+  const sessionRows = db
+    .select({ activityDate: focusSessions.activityDate })
+    .from(focusSessions)
+    .all()
+
+  for (const row of sessionRows) {
+    const year = Number(row.activityDate.slice(0, 4))
+    if (Number.isInteger(year)) years.add(year)
+  }
+
+  response.json({ years: Array.from(years).sort((first, second) => second - first) })
+})
+
 app.get('/api/sessions', (request, response) => {
-  const year = String(request.query.year ?? '2026')
+  const year = String(request.query.year ?? getCurrentYear())
 
   if (!/^\d{4}$/.test(year)) {
     response.status(400).json({ error: 'year must be a four-digit value' })
@@ -211,7 +236,7 @@ app.get('/api/sessions', (request, response) => {
 })
 
 app.get('/api/weekly-goals', (request, response) => {
-  const year = String(request.query.year ?? '2026')
+  const year = String(request.query.year ?? getCurrentYear())
 
   if (!/^\d{4}$/.test(year)) {
     response.status(400).json({ error: 'year must be a four-digit value' })
@@ -239,7 +264,7 @@ app.get('/api/weekly-goals', (request, response) => {
 })
 
 app.get('/api/dashboard', (request, response) => {
-  const year = String(request.query.year ?? '2026')
+  const year = String(request.query.year ?? getCurrentYear())
 
   if (!/^\d{4}$/.test(year)) {
     response.status(400).json({ error: 'year must be a four-digit value' })
@@ -314,7 +339,7 @@ app.post('/api/focus-sessions', (request, response) => {
   const {
     activityDate,
     activityName,
-    color = '#d8f26b',
+    color,
     durationMinutes,
     endTime,
     icon = 'notes',
@@ -351,7 +376,7 @@ app.post('/api/focus-sessions', (request, response) => {
       .insert(activities)
       .values({
         name: activityName.trim(),
-        color: typeof color === 'string' ? color : '#d8f26b',
+        color: typeof color === 'string' ? color : getNextActivityColor(),
         icon: typeof icon === 'string' ? icon : 'notes',
       })
       .returning()

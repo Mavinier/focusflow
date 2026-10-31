@@ -1,41 +1,56 @@
 import { ChevronDown, LayoutGrid } from 'lucide-react'
 import { useMemo } from 'react'
-import {
-  DAYS_IN_HEATMAP,
-  HEATMAP_START,
-  LAST_TRACKED_DATE,
-  TRACKING_YEAR,
-  WEEKDAY_LABELS,
-} from '../data/activityData'
+import type { CSSProperties } from 'react'
+import { WEEKDAY_LABELS } from '../data/activityData'
 import type { DayData } from '../types/tracker'
 import {
   addDays,
   formatDuration,
   formatShortDate,
   getIntensity,
+  getTodayDateKey,
   toDateKey,
 } from '../utils/tracker'
 
 type ActivityHeatmapProps = {
+  availableYears: number[]
   dayData: DayData
+  onYearChange: (year: number) => void
+  year: number
   selectedDate: string
   activeDaysCount: number
   onSelectDate: (date: string) => void
 }
 
 function ActivityHeatmap({
+  availableYears,
   dayData,
+  onYearChange,
+  year,
   selectedDate,
   activeDaysCount,
   onSelectDate,
 }: ActivityHeatmapProps) {
+  const today = getTodayDateKey()
   const heatmapDays = useMemo(
-    () => Array.from({ length: DAYS_IN_HEATMAP }, (_, index) => addDays(HEATMAP_START, index)),
-    [],
+    () => {
+      const yearStart = new Date(`${year}-01-01T12:00:00`)
+      const yearEnd = new Date(`${year}-12-31T12:00:00`)
+      const heatmapStart = addDays(yearStart, -yearStart.getDay())
+      const heatmapEnd = addDays(yearEnd, 6 - yearEnd.getDay())
+      const days: Date[] = []
+
+      for (let date = heatmapStart; date <= heatmapEnd; date = addDays(date, 1)) {
+        days.push(date)
+      }
+
+      return days
+    },
+    [year],
   )
   const weeks = useMemo(
     () =>
-      Array.from({ length: 53 }, (_, weekIndex) =>
+      Array.from({ length: Math.ceil(heatmapDays.length / 7) }, (_, weekIndex) =>
         heatmapDays.slice(weekIndex * 7, weekIndex * 7 + 7),
       ),
     [heatmapDays],
@@ -61,10 +76,21 @@ function ActivityHeatmap({
           </div>
           <p>Every square is a moment you chose to move forward.</p>
         </div>
-        <button className="period-button" type="button">
-          This year
+        <label className="period-button year-selector">
+          <select
+            aria-label="Select heatmap year"
+            className="year-select"
+            value={year}
+            onChange={(event) => onYearChange(Number(event.target.value))}
+          >
+            {availableYears.map((availableYear) => (
+              <option key={availableYear} value={availableYear}>
+                {availableYear}
+              </option>
+            ))}
+          </select>
           <ChevronDown size={14} />
-        </button>
+        </label>
       </div>
 
       <div className="heatmap-scroll">
@@ -75,7 +101,10 @@ function ActivityHeatmap({
               <span key={`${label}-${index}`}>{label}</span>
             ))}
           </div>
-          <div className="heatmap-chart">
+          <div
+            className="heatmap-chart"
+            style={{ '--heatmap-week-count': weeks.length } as CSSProperties}
+          >
             <div className="month-labels" aria-hidden="true">
               {monthLabels.map((label, index) => (
                 <span key={`${label}-${index}`} style={{ gridColumn: index + 1 }}>
@@ -90,8 +119,8 @@ function ActivityHeatmap({
                     const dateKey = toDateKey(date)
                     const record = dayData[dateKey]
                     const totalMinutes = record?.totalMinutes ?? 0
-                    const isFuture = dateKey > LAST_TRACKED_DATE
-                    const isOutsideYear = date.getFullYear() !== TRACKING_YEAR
+                    const isFuture = dateKey > today
+                    const isOutsideYear = date.getFullYear() !== year
                     const isUnavailable = isOutsideYear || isFuture
                     const isSelected = dateKey === selectedDate
                     const intensity = isUnavailable ? 'none' : getIntensity(totalMinutes)

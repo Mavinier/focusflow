@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import {
+  fetchAvailableYears,
   fetchDashboard,
   fetchWeeklyGoal,
   type WeeklyGoalProgress,
@@ -12,10 +13,20 @@ import PlaceholderPage from './components/PlaceholderPage'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
 import WeeklyGoalModal from './components/WeeklyGoalModal'
-import { LAST_TRACKED_DATE, TRACKING_YEAR } from './data/activityData'
 import type { AppOutletContext } from './types/app'
 import type { DayData } from './types/tracker'
-import { buildFocusMix, calculateActiveStreak } from './utils/analytics'
+import {
+  buildFocusMix,
+  calculateActiveStreak,
+  calculatePercentChange,
+  totalMinutesThrough,
+} from './utils/analytics'
+import {
+  countDaysInclusive,
+  getPreviousYearReferenceDate,
+  getTodayDateKey,
+  getYearReferenceDate,
+} from './utils/tracker'
 
 const initialWeeklyProgress: WeeklyGoalProgress = {
   weekStart: '',
@@ -26,8 +37,13 @@ const initialWeeklyProgress: WeeklyGoalProgress = {
 }
 
 function AppLayout() {
-  const [selectedDate, setSelectedDate] = useState(LAST_TRACKED_DATE)
+  const today = getTodayDateKey()
+  const currentYear = Number(today.slice(0, 4))
+  const [selectedYear, setSelectedYear] = useState(currentYear)
+  const [selectedDate, setSelectedDate] = useState(today)
+  const [availableYears, setAvailableYears] = useState([currentYear])
   const [dayData, setDayData] = useState<DayData>({})
+  const [comparisonDayData, setComparisonDayData] = useState<DayData>({})
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false)
@@ -40,12 +56,20 @@ function AppLayout() {
     setIsLoading(true)
 
     Promise.all([
-      fetchDashboard(TRACKING_YEAR),
-      fetchWeeklyGoal(LAST_TRACKED_DATE),
+      fetchAvailableYears(),
+      fetchDashboard(selectedYear),
+      fetchDashboard(selectedYear - 1),
+      fetchWeeklyGoal(getYearReferenceDate(selectedYear, today)),
     ])
-      .then(([records, progress]) => {
+      .then(([years, records, previousRecords, progress]) => {
         if (!cancelled) {
+          setAvailableYears(
+            Array.from(new Set([...years, currentYear, selectedYear])).sort(
+              (first, second) => second - first,
+            ),
+          )
           setDayData(records)
+          setComparisonDayData(previousRecords)
           setWeeklyProgress(progress)
           setError(null)
         }
@@ -62,17 +86,47 @@ function AppLayout() {
     return () => {
       cancelled = true
     }
-  }, [dataVersion])
+  }, [currentYear, dataVersion, selectedYear, today])
 
   const selectedRecord = dayData[selectedDate]
-  const activeDays = useMemo(
-    () => Object.values(dayData).filter((record) => record.totalMinutes > 0),
-    [dayData],
+  const periodEnd = getYearReferenceDate(selectedYear, today)
+  const previousPeriodEnd = getPreviousYearReferenceDate(selectedYear, today)
+  const periodDayCount = countDaysInclusive(`${selectedYear}-01-01`, periodEnd)
+  const visibleDayData = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(dayData).filter(([date]) => date <= periodEnd),
+      ) as DayData,
+    [dayData, periodEnd],
   )
-  const totalTrackedMinutes = activeDays.reduce((total, record) => total + record.totalMinutes, 0)
-  const currentStreak = useMemo(() => calculateActiveStreak(dayData), [dayData])
-  const focusMix = useMemo(() => buildFocusMix(dayData), [dayData])
+  const activeDays = useMemo(
+    () => Object.values(visibleDayData).filter((record) => record.totalMinutes > 0),
+    [visibleDayData],
+  )
+  const totalTrackedMinutes = totalMinutesThrough(visibleDayData, periodEnd)
+  const currentStreak = useMemo(
+    () => calculateActiveStreak(visibleDayData),
+    [visibleDayData],
+  )
+  const focusMix = useMemo(() => buildFocusMix(visibleDayData), [visibleDayData])
+  const comparisonPercent = calculatePercentChange(
+    totalTrackedMinutes,
+    totalMinutesThrough(comparisonDayData, previousPeriodEnd),
+  )
+
+  function handleYearChange(year: number) {
+    setSelectedYear(year)
+    setSelectedDate(year === currentYear ? today : `${year}-12-31`)
+    setAvailableYears((years) =>
+      Array.from(new Set([...years, year])).sort((first, second) => second - first),
+    )
+  }
+
   const handleActivitySaved = (date: string) => {
+    const savedYear = Number(date.slice(0, 4))
+    if (Number.isInteger(savedYear) && savedYear !== selectedYear) {
+      setSelectedYear(savedYear)
+    }
     setSelectedDate(date)
     setIsActivityModalOpen(false)
     setDataVersion((version) => version + 1)
@@ -84,6 +138,8 @@ function AppLayout() {
 
   const outletContext: AppOutletContext = {
     activeDaysCount: activeDays.length,
+    availableYears,
+    comparisonPercent,
     currentStreak,
     dataVersion,
     dayData,
@@ -91,9 +147,12 @@ function AppLayout() {
     focusMix,
     isLoading,
     onAddEntry: () => setIsActivityModalOpen(true),
+    onYearChange: handleYearChange,
+    periodDayCount,
     selectedDate,
     selectedRecord,
     setSelectedDate,
+    selectedYear,
     totalTrackedMinutes,
     weeklyProgress,
   }
@@ -106,7 +165,12 @@ function AppLayout() {
       />
 
       <main className="main-content">
-        <Topbar onLogActivity={() => setIsActivityModalOpen(true)} />
+        <Topbar
+          availableYears={availableYears}
+          onLogActivity={() => setIsActivityModalOpen(true)}
+          onYearChange={handleYearChange}
+          year={selectedYear}
+        />
         <Outlet context={outletContext} />
       </main>
 
@@ -117,7 +181,7 @@ function AppLayout() {
         onSaved={handleActivitySaved}
       />
       <WeeklyGoalModal
-        date={LAST_TRACKED_DATE}
+        date={getYearReferenceDate(selectedYear, today)}
         isOpen={isWeeklyGoalModalOpen}
         onClose={() => setIsWeeklyGoalModalOpen(false)}
         onSaved={handleWeeklyGoalSaved}
