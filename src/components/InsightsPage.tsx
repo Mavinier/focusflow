@@ -27,6 +27,7 @@ import {
   streakFromSessions,
   topDays,
   totalMinutes,
+  weekdayBaseline,
   weekdayDistribution,
   type InsightPeriod,
 } from '../utils/insights'
@@ -93,7 +94,12 @@ function InsightsPage() {
   )
   const productiveDays = useMemo(() => topDays(periodSessions), [periodSessions])
   const hours = useMemo(() => hourHistogram(periodSessions), [periodSessions])
-  const weekdays = useMemo(() => weekdayDistribution(periodSessions), [periodSessions])
+  const weekdays = useMemo(
+    () => period === 'week'
+      ? weekdayBaseline(sessions, `${selectedYear}-01-01`, referenceDate)
+      : weekdayDistribution(periodSessions),
+    [period, periodSessions, referenceDate, selectedYear, sessions],
+  )
   const weeks = useMemo(
     () => plannedVsActual(periodSessions, goals, range.from, range.to),
     [periodSessions, goals, range],
@@ -229,6 +235,11 @@ function InsightsPage() {
             <div>
               <p className="eyebrow">Trends</p>
               <h2>{period === 'week' ? 'Daily' : period === 'month' ? 'Weekly' : 'Monthly'} focus</h2>
+              <p className="chart-context">
+                {period === 'week'
+                  ? `Daily totals for ${formatShortDate(range.from)} – ${formatShortDate(range.to)} · all activities`
+                  : `Total focus in the selected ${period} · all activities`}
+              </p>
             </div>
           </div>
           <ChartArea ariaLabel="Focus trend" max={maxTrend} showScale={showChartScale}>
@@ -237,17 +248,20 @@ function InsightsPage() {
                 className="insight-column"
                 key={point.key}
                 tabIndex={0}
-                aria-label={`${point.label}: ${formatDuration(point.minutes)} focused`}
+                aria-label={`${point.tooltipTitle ?? point.label}${point.detail ? `, ${point.detail}` : ''}: ${formatDuration(point.minutes)} focused`}
               >
                 <div className="insight-bar-slot">
                   <span
                     className="insight-column-bar"
                     style={{ height: `${Math.max((point.minutes / maxTrend) * 100, point.minutes ? 4 : 0)}%` }}
-                    title={`${point.label}: ${formatDuration(point.minutes)}`}
+                    title={`${point.tooltipTitle ?? point.label}${point.detail ? `, ${point.detail}` : ''}: ${formatDuration(point.minutes)}`}
                   />
                   <span className="chart-tooltip" role="tooltip">
-                    <strong>{point.label}</strong>
-                    <small>{formatDuration(point.minutes)} focused</small>
+                    <strong>{point.tooltipTitle ?? point.label}</strong>
+                    <small>
+                      {point.detail ? `${point.detail} · ` : ''}
+                      {formatDuration(point.minutes)} focused
+                    </small>
                   </span>
                 </div>
                 <span>{point.label}</span>
@@ -318,7 +332,12 @@ function InsightsPage() {
           <div className="card-heading compact">
             <div>
               <p className="eyebrow">Rhythm</p>
-              <h2>Activity by weekday</h2>
+              <h2>{period === 'week' ? 'Typical focus by weekday' : 'Focus by weekday'}</h2>
+              <p className="chart-context">
+                {period === 'week'
+                  ? `Average per day across ${selectedYear} · all activities`
+                  : `Total focus in the selected ${period} · all activities`}
+              </p>
             </div>
           </div>
           <ChartArea ariaLabel="Focus by weekday" max={maxWeekday} showScale={showChartScale}>
@@ -327,17 +346,25 @@ function InsightsPage() {
                 className="insight-column"
                 key={day.label}
                 tabIndex={0}
-                aria-label={`${day.label}: ${formatDuration(day.minutes)} focused`}
+                aria-label={period === 'week'
+                  ? `${day.label} average: ${formatDuration(day.minutes)} per day across ${day.sampleDays} calendar days`
+                  : `${day.label}: ${formatDuration(day.minutes)} focused`}
               >
                 <div className="insight-bar-slot">
                   <span
                     className="insight-column-bar"
                     style={{ height: `${Math.max((day.minutes / maxWeekday) * 100, day.minutes ? 4 : 0)}%` }}
-                    title={`${day.label}: ${formatDuration(day.minutes)}`}
+                    title={period === 'week'
+                      ? `${day.label} average: ${formatDuration(day.minutes)} per day`
+                      : `${day.label}: ${formatDuration(day.minutes)}`}
                   />
                   <span className="chart-tooltip" role="tooltip">
-                    <strong>{day.label}</strong>
-                    <small>{formatDuration(day.minutes)} focused</small>
+                    <strong>{period === 'week' ? `${day.label} average` : day.label}</strong>
+                    <small>
+                      {period === 'week'
+                        ? `${formatDuration(day.minutes)} per day · ${day.sampleDays} calendar days`
+                        : `${formatDuration(day.minutes)} focused`}
+                    </small>
                   </span>
                 </div>
                 <span>{day.label}</span>

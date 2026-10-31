@@ -246,6 +246,14 @@
   flex: 0 0 auto;
 }
 
+.card-heading .chart-context {
+  max-width: 420px;
+  margin: 6px 0 0;
+  color: var(--faint);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
 .insight-empty {
   margin: 0;
   color: var(--faint);

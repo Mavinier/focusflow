@@ -10,6 +10,8 @@ export type TrendPoint = {
   key: string
   label: string
   minutes: number
+  detail?: string
+  tooltipTitle?: string
 }
 
 export type RankedDay = {
@@ -28,6 +30,7 @@ export type WeekdayTotal = {
   weekday: number
   label: string
   minutes: number
+  sampleDays?: number
 }
 
 export type WeekPlanActual = {
@@ -143,6 +146,7 @@ export function buildTrend(
       key: date,
       label: new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(new Date(`${date}T12:00:00`)),
       minutes: date <= today ? (totals.get(date) ?? 0) : 0,
+      detail: formatShortDate(date),
     }))
   }
 
@@ -154,15 +158,17 @@ export function buildTrend(
 
     while (cursor <= monthEnd) {
       const weekEnd = getWeekEnd(cursor)
+      const rangeStart = cursor < monthStart ? monthStart : cursor
       const rangeEnd = weekEnd < monthEnd ? weekEnd : monthEnd
-      const minutes = enumerateDates(cursor < monthStart ? monthStart : cursor, rangeEnd)
+      const minutes = enumerateDates(rangeStart, rangeEnd)
         .filter((date) => date <= today)
         .reduce((total, date) => total + (totals.get(date) ?? 0), 0)
 
       points.push({
         key: cursor,
-        label: formatShortDate(cursor).replace(/, \d{4}$/, ''),
+        label: formatShortDate(rangeStart).replace(/, \d{4}$/, ''),
         minutes,
+        tooltipTitle: `${formatShortDate(rangeStart).replace(/, \d{4}$/, '')} – ${formatShortDate(rangeEnd).replace(/, \d{4}$/, '')}`,
       })
       cursor = toDateKey(addDays(new Date(`${cursor}T12:00:00`), 7))
     }
@@ -234,15 +240,38 @@ export function weekdayDistribution(sessions: FocusSessionRow[]): WeekdayTotal[]
   const totals = Array.from({ length: 7 }, () => 0)
 
   for (const session of sessions) {
-    const date = new Date(`${session.activityDate}T12:00:00`)
-    const mondayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1
-    totals[mondayIndex] += session.durationMinutes
+    totals[getWeekdayIndex(session.activityDate)] += session.durationMinutes
   }
 
   return WEEKDAY_LABELS.map((label, weekday) => ({
     weekday,
     label,
     minutes: totals[weekday],
+  }))
+}
+
+export function weekdayBaseline(
+  sessions: FocusSessionRow[],
+  from: string,
+  to: string,
+): WeekdayTotal[] {
+  const totals = Array.from({ length: 7 }, () => 0)
+  const dayCounts = Array.from({ length: 7 }, () => 0)
+
+  for (const date of enumerateDates(from, to)) {
+    dayCounts[getWeekdayIndex(date)] += 1
+  }
+
+  for (const session of sessions) {
+    if (session.activityDate < from || session.activityDate > to) continue
+    totals[getWeekdayIndex(session.activityDate)] += session.durationMinutes
+  }
+
+  return WEEKDAY_LABELS.map((label, weekday) => ({
+    weekday,
+    label,
+    minutes: Math.round(totals[weekday] / dayCounts[weekday]),
+    sampleDays: dayCounts[weekday],
   }))
 }
 
@@ -432,6 +461,11 @@ function enumerateDates(from: string, to: string) {
   }
 
   return dates
+}
+
+function getWeekdayIndex(dateKey: string) {
+  const date = new Date(`${dateKey}T12:00:00`)
+  return date.getDay() === 0 ? 6 : date.getDay() - 1
 }
 
 function lastDayOfMonth(dateKey: string) {
