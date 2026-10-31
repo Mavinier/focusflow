@@ -23,6 +23,7 @@ export type RankedDay = {
 export type HourBucket = {
   hour: number
   label: string
+  axisLabel: string
   minutes: number
 }
 
@@ -231,6 +232,7 @@ export function hourHistogram(sessions: FocusSessionRow[]): HourBucket[] {
     return {
       hour,
       label: formatHour(hour),
+      axisLabel: formatCompactHour(hour),
       minutes: buckets.get(hour) ?? 0,
     }
   })
@@ -486,6 +488,12 @@ function parseStartHour(startedAt: string | null) {
 
 function formatHour(hour: number) {
   const suffix = hour >= 12 ? 'pm' : 'am'
+  const normalized = hour % 12 || 12
+  return `${normalized}${suffix}`
+}
+
+function formatCompactHour(hour: number) {
+  const suffix = hour >= 12 ? 'p' : 'a'
   const normalized = hour % 12 || 12
   return `${normalized}${suffix}`
 }

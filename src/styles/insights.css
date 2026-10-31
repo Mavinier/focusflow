@@ -400,8 +400,17 @@
 }
 
 .hour-columns {
-  overflow-x: auto;
+  gap: 2px;
+  overflow: visible;
   padding-bottom: 4px;
+}
+
+.hour-columns .insight-column {
+  min-width: 0;
+}
+
+.hour-columns .insight-column-bar {
+  max-width: 12px;
 }
 
 .insight-column {

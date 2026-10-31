@@ -319,7 +319,7 @@ function InsightsPage() {
                       <small>{formatDuration(bucket.minutes)} focused</small>
                     </span>
                   </div>
-                  <span>{bucket.label}</span>
+                <span>{bucket.axisLabel}</span>
                 </div>
               ))}
             </ChartArea>
