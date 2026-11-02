@@ -5,6 +5,12 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "scheme": "focusflow",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0d1114"
+    },
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
@@ -12,7 +18,11 @@
       "bundleIdentifier": "com.focusflow.mobile"
     },
     "android": {
-      "package": "com.focusflow.mobile"
+      "package": "com.focusflow.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#0d1114"
+      }
     },
     "web": {
       "bundler": "metro"
