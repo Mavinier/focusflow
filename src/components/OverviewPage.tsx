@@ -16,7 +16,10 @@ function OverviewPage() {
     dayData,
     error,
     focusMix,
+    heatmapActiveDaysCount,
+    heatmapDayData,
     isLoading,
+    onHeatmapModeChange,
     onAddEntry,
     onYearChange,
     periodDayCount,
@@ -25,6 +28,7 @@ function OverviewPage() {
     selectedYear,
     setSelectedDate,
     totalTrackedMinutes,
+    useRollingHeatmap,
   } = useOutletContext<AppOutletContext>()
   const today = getTodayDateKey()
   const headingDate =
@@ -59,12 +63,14 @@ function OverviewPage() {
 
       <section className="tracker-layout">
         <ActivityHeatmap
-          activeDaysCount={activeDaysCount}
+          activeDaysCount={heatmapActiveDaysCount}
           availableYears={availableYears}
-          dayData={dayData}
+          dayData={heatmapDayData}
+          onModeChange={onHeatmapModeChange}
           onSelectDate={setSelectedDate}
           onYearChange={onYearChange}
           selectedDate={selectedDate}
+          useRollingWindow={useRollingHeatmap}
           year={selectedYear}
         />
         <DayDetail

@@ -7,6 +7,7 @@ import {
   addDays,
   formatDuration,
   formatShortDate,
+  getActivityMapRange,
   getIntensity,
   getTodayDateKey,
   toDateKey,
@@ -15,29 +16,34 @@ import {
 type ActivityHeatmapProps = {
   availableYears: number[]
   dayData: DayData
+  onModeChange: (useRolling: boolean) => void
   onYearChange: (year: number) => void
   year: number
   selectedDate: string
   activeDaysCount: number
   onSelectDate: (date: string) => void
+  useRollingWindow: boolean
 }
 
 function ActivityHeatmap({
   availableYears,
   dayData,
+  onModeChange,
   onYearChange,
   year,
   selectedDate,
   activeDaysCount,
   onSelectDate,
+  useRollingWindow,
 }: ActivityHeatmapProps) {
   const today = getTodayDateKey()
+  const mapRange = getActivityMapRange(year, today, useRollingWindow)
   const heatmapDays = useMemo(
     () => {
-      const yearStart = new Date(`${year}-01-01T12:00:00`)
-      const yearEnd = new Date(`${year}-12-31T12:00:00`)
-      const heatmapStart = addDays(yearStart, -yearStart.getDay())
-      const heatmapEnd = addDays(yearEnd, 6 - yearEnd.getDay())
+      const rangeStart = new Date(`${mapRange.from}T12:00:00`)
+      const rangeEnd = new Date(`${mapRange.to}T12:00:00`)
+      const heatmapStart = addDays(rangeStart, -rangeStart.getDay())
+      const heatmapEnd = addDays(rangeEnd, 6 - rangeEnd.getDay())
       const days: Date[] = []
 
       for (let date = heatmapStart; date <= heatmapEnd; date = addDays(date, 1)) {
@@ -46,7 +52,7 @@ function ActivityHeatmap({
 
       return days
     },
-    [year],
+    [mapRange.from, mapRange.to],
   )
   const weeks = useMemo(
     () =>
@@ -56,14 +62,27 @@ function ActivityHeatmap({
     [heatmapDays],
   )
   const monthLabels = useMemo(
-    () =>
-      weeks.map((week, index) => {
-        const firstDay = week[0]
-        const month = firstDay.toLocaleString('en-US', { month: 'short' })
-        const isNewMonth = index === 0 || firstDay.getDate() <= 7
-        return isNewMonth ? month : ''
-      }),
-    [weeks],
+    () => {
+      let previousMonth = ''
+
+      return weeks.map((week) => {
+        const firstVisibleDay = week.find((date) => {
+          const dateKey = toDateKey(date)
+          return dateKey >= mapRange.from && dateKey <= mapRange.to
+        })
+
+        if (!firstVisibleDay) return ''
+
+        const monthKey = `${firstVisibleDay.getFullYear()}-${firstVisibleDay.getMonth()}`
+        const isNewMonth = monthKey !== previousMonth
+        previousMonth = monthKey
+
+        return isNewMonth
+          ? firstVisibleDay.toLocaleString('en-US', { month: 'short' })
+          : ''
+      })
+    },
+    [mapRange.from, mapRange.to, weeks],
   )
 
   return (
@@ -74,23 +93,38 @@ function ActivityHeatmap({
             <span className="heading-icon"><LayoutGrid size={16} /></span>
             <h2>Activity map</h2>
           </div>
-          <p>Every square is a moment you chose to move forward.</p>
+          <p>
+            {useRollingWindow
+              ? 'Last 365 days, ending today.'
+              : `Full calendar year ${year}.`}
+          </p>
         </div>
-        <label className="period-button year-selector">
-          <select
-            aria-label="Select heatmap year"
-            className="year-select"
-            value={year}
-            onChange={(event) => onYearChange(Number(event.target.value))}
-          >
-            {availableYears.map((availableYear) => (
-              <option key={availableYear} value={availableYear}>
-                {availableYear}
-              </option>
-            ))}
-          </select>
-          <ChevronDown size={14} />
-        </label>
+        <div className="heatmap-controls">
+          {year === Number(today.slice(0, 4)) && (
+            <button
+              className="period-button"
+              type="button"
+              onClick={() => onModeChange(!useRollingWindow)}
+            >
+              {useRollingWindow ? `View ${year}` : 'Last 365 days'}
+            </button>
+          )}
+          <label className="period-button year-selector">
+            <select
+              aria-label="Select heatmap year"
+              className="year-select"
+              value={year}
+              onChange={(event) => onYearChange(Number(event.target.value))}
+            >
+              {availableYears.map((availableYear) => (
+                <option key={availableYear} value={availableYear}>
+                  {availableYear}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={14} />
+          </label>
+        </div>
       </div>
 
       <div className="heatmap-scroll">
@@ -119,19 +153,17 @@ function ActivityHeatmap({
                     const dateKey = toDateKey(date)
                     const record = dayData[dateKey]
                     const totalMinutes = record?.totalMinutes ?? 0
-                    const isFuture = dateKey > today
-                    const isOutsideYear = date.getFullYear() !== year
-                    const isUnavailable = isOutsideYear || isFuture
+                    const isOutsideRange = dateKey < mapRange.from || dateKey > mapRange.to
                     const isSelected = dateKey === selectedDate
-                    const intensity = isUnavailable ? 'none' : getIntensity(totalMinutes)
+                    const intensity = isOutsideRange ? 'none' : getIntensity(totalMinutes)
 
                     return (
                       <button
-                        className={`activity-cell intensity-${intensity}${isSelected ? ' selected' : ''}${isOutsideYear ? ' outside-year' : ''}`}
+                        className={`activity-cell intensity-${intensity}${isSelected ? ' selected' : ''}${isOutsideRange ? ' outside-range' : ''}`}
                         key={dateKey}
                         type="button"
                         role="gridcell"
-                        disabled={isUnavailable}
+                        disabled={isOutsideRange}
                         aria-label={`${formatShortDate(dateKey)}: ${totalMinutes ? `${formatDuration(totalMinutes)} focused` : 'No activity'}`}
                         aria-pressed={isSelected}
                         onClick={() => onSelectDate(dateKey)}

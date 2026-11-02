@@ -43,6 +43,13 @@
   background: rgba(216, 242, 107, 0.1);
 }
 
+.heatmap-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  gap: 8px;
+}
+
 .peach-icon {
   color: var(--peach);
   background: rgba(245, 185, 125, 0.1);
@@ -142,7 +149,7 @@
   background: #1a2a40;
 }
 
-.activity-cell.intensity-none.outside-year {
+.activity-cell.intensity-none.outside-range {
   opacity: 0.24;
 }
 

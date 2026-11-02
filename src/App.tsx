@@ -23,6 +23,7 @@ import {
 } from './utils/analytics'
 import {
   countDaysInclusive,
+  getActivityMapRange,
   getPreviousYearReferenceDate,
   getTodayDateKey,
   getYearReferenceDate,
@@ -40,6 +41,7 @@ function AppLayout() {
   const today = getTodayDateKey()
   const currentYear = Number(today.slice(0, 4))
   const [selectedYear, setSelectedYear] = useState(currentYear)
+  const [useRollingHeatmap, setUseRollingHeatmap] = useState(true)
   const [selectedDate, setSelectedDate] = useState(today)
   const [availableYears, setAvailableYears] = useState([currentYear])
   const [dayData, setDayData] = useState<DayData>({})
@@ -88,7 +90,19 @@ function AppLayout() {
     }
   }, [currentYear, dataVersion, selectedYear, today])
 
-  const selectedRecord = dayData[selectedDate]
+  const heatmapRange = getActivityMapRange(selectedYear, today, useRollingHeatmap)
+  const heatmapDayData = useMemo(
+    () =>
+      useRollingHeatmap && selectedYear === currentYear
+        ? { ...comparisonDayData, ...dayData }
+        : dayData,
+    [comparisonDayData, currentYear, dayData, selectedYear, useRollingHeatmap],
+  )
+  const selectedRecord =
+    dayData[selectedDate] ??
+    (useRollingHeatmap && selectedYear === currentYear
+      ? comparisonDayData[selectedDate]
+      : undefined)
   const periodEnd = getYearReferenceDate(selectedYear, today)
   const previousPeriodEnd = getPreviousYearReferenceDate(selectedYear, today)
   const periodDayCount = countDaysInclusive(`${selectedYear}-01-01`, periodEnd)
@@ -103,6 +117,16 @@ function AppLayout() {
     () => Object.values(visibleDayData).filter((record) => record.totalMinutes > 0),
     [visibleDayData],
   )
+  const heatmapActiveDaysCount = useMemo(
+    () =>
+      Object.values(heatmapDayData).filter(
+        (record) =>
+          record.totalMinutes > 0 &&
+          record.date >= heatmapRange.from &&
+          record.date <= heatmapRange.to,
+      ).length,
+    [heatmapDayData, heatmapRange.from, heatmapRange.to],
+  )
   const totalTrackedMinutes = totalMinutesThrough(visibleDayData, periodEnd)
   const currentStreak = useMemo(
     () => calculateActiveStreak(visibleDayData),
@@ -116,6 +140,7 @@ function AppLayout() {
 
   function handleYearChange(year: number) {
     setSelectedYear(year)
+    setUseRollingHeatmap(false)
     setSelectedDate(year === currentYear ? today : `${year}-12-31`)
     setAvailableYears((years) =>
       Array.from(new Set([...years, year])).sort((first, second) => second - first),
@@ -126,6 +151,7 @@ function AppLayout() {
     const savedYear = Number(date.slice(0, 4))
     if (Number.isInteger(savedYear) && savedYear !== selectedYear) {
       setSelectedYear(savedYear)
+      setUseRollingHeatmap(false)
     }
     setSelectedDate(date)
     setIsActivityModalOpen(false)
@@ -145,7 +171,10 @@ function AppLayout() {
     dayData,
     error,
     focusMix,
+    heatmapActiveDaysCount,
+    heatmapDayData,
     isLoading,
+    onHeatmapModeChange: setUseRollingHeatmap,
     onAddEntry: () => setIsActivityModalOpen(true),
     onYearChange: handleYearChange,
     periodDayCount,
@@ -154,6 +183,7 @@ function AppLayout() {
     setSelectedDate,
     selectedYear,
     totalTrackedMinutes,
+    useRollingHeatmap,
     weeklyProgress,
   }
 

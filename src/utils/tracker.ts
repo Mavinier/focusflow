@@ -15,6 +15,19 @@ export function getYearReferenceDate(year: number, today = getTodayDateKey()) {
   return year === Number(today.slice(0, 4)) ? today : `${year}-12-31`
 }
 
+export function getActivityMapRange(
+  year: number,
+  today = getTodayDateKey(),
+  useRollingWindow = true,
+) {
+  if (useRollingWindow && year === Number(today.slice(0, 4))) {
+    const rollingStart = toDateKey(addDays(new Date(`${today}T12:00:00`), -364))
+    return { from: rollingStart, to: today }
+  }
+
+  return { from: `${year}-01-01`, to: `${year}-12-31` }
+}
+
 export function getPreviousYearReferenceDate(year: number, today = getTodayDateKey()) {
   const referenceDate = getYearReferenceDate(year, today)
   return `${year - 1}${referenceDate.slice(4)}`

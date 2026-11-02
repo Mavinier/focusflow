@@ -11,6 +11,10 @@ export type AppOutletContext = {
   dayData: DayData
   error: string | null
   focusMix: FocusMixItem[]
+  heatmapActiveDaysCount: number
+  heatmapDayData: DayData
+  onHeatmapModeChange: (useRolling: boolean) => void
+  useRollingHeatmap: boolean
   isLoading: boolean
   onAddEntry: () => void
   onYearChange: (year: number) => void
