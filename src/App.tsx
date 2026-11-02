@@ -3,7 +3,9 @@ import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom
 import {
   fetchAvailableYears,
   fetchDashboard,
+  fetchSettings,
   fetchWeeklyGoal,
+  type AppSettings,
   type WeeklyGoalProgress,
 } from './api/activityApi'
 import ActivityFormModal from './components/ActivityFormModal'
@@ -47,6 +49,7 @@ function AppLayout() {
   const [availableYears, setAvailableYears] = useState([currentYear])
   const [dayData, setDayData] = useState<DayData>({})
   const [comparisonDayData, setComparisonDayData] = useState<DayData>({})
+  const [displayName, setDisplayName] = useState('Marlon Moura')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false)
@@ -90,6 +93,14 @@ function AppLayout() {
       cancelled = true
     }
   }, [currentYear, dataVersion, selectedYear, today])
+
+  useEffect(() => {
+    fetchSettings()
+      .then((settings) => setDisplayName(settings.displayName))
+      .catch(() => {
+        // The dashboard can still render with the local default name.
+      })
+  }, [dataVersion])
 
   const heatmapRange = getActivityMapRange(selectedYear, today, useRollingHeatmap)
   const heatmapDayData = useMemo(
@@ -163,6 +174,16 @@ function AppLayout() {
     setIsWeeklyGoalModalOpen(false)
     setDataVersion((version) => version + 1)
   }
+  const handleSettingsSaved = (settings: AppSettings) => {
+    setDisplayName(settings.displayName)
+    setDataVersion((version) => version + 1)
+  }
+  const handleDataReset = () => {
+    setSelectedYear(currentYear)
+    setSelectedDate(today)
+    setUseRollingHeatmap(true)
+    setDataVersion((version) => version + 1)
+  }
 
   const outletContext: AppOutletContext = {
     activeDaysCount: activeDays.length,
@@ -179,6 +200,7 @@ function AppLayout() {
     onHeatmapModeChange: setUseRollingHeatmap,
     onAddEntry: () => setIsActivityModalOpen(true),
     onEditWeeklyGoal: () => setIsWeeklyGoalModalOpen(true),
+    onSettingsSaved: handleSettingsSaved,
     onYearChange: handleYearChange,
     periodDayCount,
     selectedDate,
@@ -193,6 +215,8 @@ function AppLayout() {
   return (
     <div className="app-shell">
       <Sidebar
+        displayName={displayName}
+        onDataReset={handleDataReset}
         onEditWeeklyGoal={() => setIsWeeklyGoalModalOpen(true)}
         weeklyProgress={weeklyProgress}
       />

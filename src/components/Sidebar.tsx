@@ -2,7 +2,6 @@ import {
   BarChart3,
   LayoutGrid,
   Menu,
-  MoreHorizontal,
   Settings,
   Sparkles,
   Target,
@@ -10,13 +9,21 @@ import {
 import { NavLink } from 'react-router-dom'
 import type { WeeklyGoalProgress } from '../api/activityApi'
 import { formatDuration } from '../utils/tracker'
+import UserMenu from './UserMenu'
 
 type SidebarProps = {
+  displayName: string
+  onDataReset: () => void
   weeklyProgress: WeeklyGoalProgress
   onEditWeeklyGoal: () => void
 }
 
-function Sidebar({ weeklyProgress, onEditWeeklyGoal }: SidebarProps) {
+function Sidebar({
+  displayName,
+  onDataReset,
+  weeklyProgress,
+  onEditWeeklyGoal,
+}: SidebarProps) {
   const progressPercent = Math.round(weeklyProgress.progressPercent)
   const progressWidth = Math.min(weeklyProgress.progressPercent, 100)
 
@@ -67,14 +74,7 @@ function Sidebar({ weeklyProgress, onEditWeeklyGoal }: SidebarProps) {
           <Settings size={17} />
           Settings
         </NavLink>
-        <div className="user-chip">
-          <div className="avatar">MM</div>
-          <div>
-            <strong>Marlon Moura</strong>
-            <span>Personal workspace</span>
-          </div>
-          <MoreHorizontal size={16} className="user-menu" />
-        </div>
+        <UserMenu displayName={displayName} onDataReset={onDataReset} />
       </div>
     </aside>
   )

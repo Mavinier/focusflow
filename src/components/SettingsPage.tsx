@@ -1,4 +1,4 @@
-import { Check, LoaderCircle, Palette, Save, Settings2 } from 'lucide-react'
+import { Check, ChevronDown, LoaderCircle, Palette, Save, Settings2 } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import {
@@ -16,7 +16,7 @@ import { ACTIVITY_COLOR_PALETTE } from '../data/activityColors'
 type SettingsDraft = AppSettings
 
 function SettingsPage() {
-  const { dataVersion } = useOutletContext<AppOutletContext>()
+  const { dataVersion, onSettingsSaved } = useOutletContext<AppOutletContext>()
   const [settings, setSettings] = useState<SettingsDraft | null>(null)
   const [activities, setActivities] = useState<ActivityOption[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -77,7 +77,9 @@ function SettingsPage() {
     }
 
     try {
-      setSettings(await updateSettings(input))
+      const updatedSettings = await updateSettings(input)
+      setSettings(updatedSettings)
+      onSettingsSaved(updatedSettings)
       setSavedMessage('Settings saved.')
     } catch (requestError: unknown) {
       setError(requestError instanceof Error ? requestError.message : 'Unable to save settings.')
@@ -188,20 +190,26 @@ function SettingsPage() {
 
                 <label className="settings-field">
                   Week starts on
-                  <select
-                    value={settings.weekStartsOn}
-                    onChange={(event) => updateDraft('weekStartsOn', Number(event.target.value))}
-                  >
-                    <option value={1}>Monday</option>
-                    <option value={0}>Sunday</option>
-                  </select>
+                  <div className="settings-select-control">
+                    <select
+                      value={settings.weekStartsOn}
+                      onChange={(event) => updateDraft('weekStartsOn', Number(event.target.value))}
+                    >
+                      <option value={1}>Monday</option>
+                      <option value={0}>Sunday</option>
+                    </select>
+                    <ChevronDown size={14} />
+                  </div>
                 </label>
 
                 <label className="settings-field">
                   Theme
-                  <select disabled value={settings.theme}>
-                    <option value="dark">Dark</option>
-                  </select>
+                  <div className="settings-select-control">
+                    <select disabled value={settings.theme}>
+                      <option value="dark">Dark</option>
+                    </select>
+                    <ChevronDown size={14} />
+                  </div>
                   <small>More themes can be added later.</small>
                 </label>
               </div>
@@ -338,26 +346,32 @@ function ActivitySettingsRow({
         value={activity.name}
         onChange={(event) => onChange(activity.id, 'name', event.target.value)}
       />
-      <select
-        aria-label={`${activity.name} icon`}
-        value={activity.icon}
-        onChange={(event) => onChange(activity.id, 'icon', event.target.value)}
-      >
-        <option value="code">Code</option>
-        <option value="database">Database</option>
-        <option value="book">Book</option>
-        <option value="work">Work</option>
-        <option value="notes">Notes</option>
-      </select>
-      <select
-        aria-label={`${activity.name} color`}
-        value={activity.color}
-        onChange={(event) => onChange(activity.id, 'color', event.target.value)}
-      >
-        {ACTIVITY_COLOR_PALETTE.map((color) => (
-          <option key={color} value={color}>{color}</option>
-        ))}
-      </select>
+      <div className="settings-select-control compact">
+        <select
+          aria-label={`${activity.name} icon`}
+          value={activity.icon}
+          onChange={(event) => onChange(activity.id, 'icon', event.target.value)}
+        >
+          <option value="code">Code</option>
+          <option value="database">Database</option>
+          <option value="book">Book</option>
+          <option value="work">Work</option>
+          <option value="notes">Notes</option>
+        </select>
+        <ChevronDown size={12} />
+      </div>
+      <div className="settings-select-control compact">
+        <select
+          aria-label={`${activity.name} color`}
+          value={activity.color}
+          onChange={(event) => onChange(activity.id, 'color', event.target.value)}
+        >
+          {ACTIVITY_COLOR_PALETTE.map((color) => (
+            <option key={color} value={color}>{color}</option>
+          ))}
+        </select>
+        <ChevronDown size={12} />
+      </div>
       <button
         aria-label={`Save ${activity.name}`}
         className="activity-save-button"

@@ -56,15 +56,16 @@
 }
 
 .heatmap-scroll {
-  overflow-x: auto;
-  padding-bottom: 4px;
+  overflow-x: hidden;
+  padding: 0 12px 4px 0;
   scrollbar-color: #2b3c56 transparent;
   scrollbar-width: thin;
 }
 
 .heatmap {
   display: flex;
-  min-width: 695px;
+  width: 100%;
+  min-width: 0;
   gap: 10px;
 }
 
@@ -92,8 +93,8 @@
 .month-labels,
 .week-grid {
   display: grid;
-  grid-template-columns: repeat(var(--heatmap-week-count), minmax(9px, 1fr));
-  gap: 4px;
+  grid-template-columns: repeat(var(--heatmap-week-count), minmax(0, 1fr));
+  gap: clamp(2px, 0.45vw, 4px);
 }
 
 .month-labels {
@@ -114,7 +115,7 @@
 .week-column {
   display: grid;
   grid-template-rows: repeat(7, 14px);
-  gap: 4px;
+  gap: clamp(2px, 0.45vw, 4px);
 }
 
 .activity-cell {
@@ -200,4 +201,24 @@
 
 .legend span {
   margin: 0 4px;
+}
+
+@media (max-width: 620px) {
+  .heatmap-scroll {
+    overflow-x: auto;
+  }
+
+  .heatmap {
+    min-width: 695px;
+  }
+
+  .month-labels,
+  .week-grid {
+    grid-template-columns: repeat(var(--heatmap-week-count), minmax(9px, 1fr));
+    gap: 4px;
+  }
+
+  .week-column {
+    gap: 4px;
+  }
 }

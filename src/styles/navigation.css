@@ -124,12 +124,22 @@
 }
 
 .user-chip {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 9px;
   padding: 5px 7px;
   border-top: 1px solid var(--line);
   color: var(--text);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: background 160ms ease;
+}
+
+.user-chip:hover {
+  background: rgba(255, 255, 255, 0.035);
 }
 
 .avatar {
@@ -168,6 +178,89 @@
 .user-menu {
   margin-left: auto;
   color: var(--faint);
+}
+
+.user-menu-wrapper {
+  position: relative;
+}
+
+.user-menu-popover {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  bottom: calc(100% + 10px);
+  display: grid;
+  width: min(270px, calc(100vw - 20px));
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: #111d30;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.38);
+}
+
+.user-menu-heading {
+  padding: 12px 14px 9px;
+  color: var(--faint);
+  border-bottom: 1px solid var(--line);
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.user-menu-item,
+.user-menu-info {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 38px;
+  padding: 0 14px;
+  color: var(--muted);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 10px;
+  text-align: left;
+}
+
+.user-menu-item {
+  width: 100%;
+  cursor: pointer;
+}
+
+.user-menu-item:hover:not(:disabled) {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.user-menu-item.danger {
+  color: var(--peach);
+  border-top: 1px solid var(--line);
+}
+
+.user-menu-item.danger:hover:not(:disabled) {
+  color: #ffd0a8;
+  background: rgba(245, 185, 125, 0.06);
+}
+
+.user-menu-item:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.user-menu-info {
+  min-height: 32px;
+  color: var(--faint);
+  font-size: 9px;
+}
+
+.user-menu-error {
+  margin: 0;
+  padding: 9px 14px 12px;
+  color: var(--peach);
+  border-top: 1px solid var(--line);
+  font-size: 9px;
+  line-height: 1.4;
 }
 
 .mobile-menu-button {

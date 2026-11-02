@@ -346,6 +346,30 @@ app.patch('/api/settings', (request, response) => {
   response.json(serializeSettings(ensureAppSettings()))
 })
 
+app.get('/api/export', (_request, response) => {
+  response.json({
+    exportedAt: new Date().toISOString(),
+    settings: ensureAppSettings(),
+    activities: db.select().from(activities).all(),
+    focusSessions: db.select().from(focusSessions).all(),
+    dailyNotes: db.select().from(dailyNotes).all(),
+    weeklyGoals: db.select().from(weeklyGoals).all(),
+    notifications: db.select().from(notifications).all(),
+  })
+})
+
+app.post('/api/data/reset', (_request, response) => {
+  db.transaction((tx) => {
+    tx.delete(focusSessions).run()
+    tx.delete(dailyNotes).run()
+    tx.delete(weeklyGoals).run()
+    tx.delete(activities).run()
+    tx.delete(notifications).run()
+  })
+
+  response.json({ status: 'reset' })
+})
+
 app.get('/api/notifications', (_request, response) => {
   response.json(listNotifications())
 })

@@ -163,6 +163,24 @@ export async function updateSettings(input: UpdateSettingsInput): Promise<AppSet
   return (await response.json()) as AppSettings
 }
 
+export async function exportData() {
+  const response = await fetch('/api/export')
+
+  if (!response.ok) {
+    throw new Error('Unable to export FocusFlow data.')
+  }
+
+  return response.json()
+}
+
+export async function resetActivityData() {
+  const response = await fetch('/api/data/reset', { method: 'POST' })
+
+  if (!response.ok) {
+    throw new Error('Unable to reset activity data.')
+  }
+}
+
 export async function fetchNotifications(): Promise<NotificationsResponse> {
   const response = await fetch('/api/notifications')
 

@@ -130,6 +130,29 @@
   box-shadow: 0 0 0 3px rgba(216, 242, 107, 0.08);
 }
 
+.settings-select-control {
+  position: relative;
+  min-width: 0;
+}
+
+.settings-select-control select {
+  padding-right: 34px;
+  appearance: none;
+}
+
+.settings-select-control > svg {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  color: var(--faint);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.settings-select-control.compact > svg {
+  right: 8px;
+}
+
 .settings-field select:disabled,
 .settings-field input:disabled {
   cursor: not-allowed;

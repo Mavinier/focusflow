@@ -1,4 +1,4 @@
-import type { WeeklyGoalProgress } from '../api/activityApi'
+import type { AppSettings, WeeklyGoalProgress } from '../api/activityApi'
 import type { FocusMixItem } from '../utils/analytics'
 import type { DayData, DayRecord } from './tracker'
 
@@ -18,6 +18,7 @@ export type AppOutletContext = {
   isLoading: boolean
   onAddEntry: () => void
   onEditWeeklyGoal: () => void
+  onSettingsSaved: (settings: AppSettings) => void
   onYearChange: (year: number) => void
   periodDayCount: number
   selectedDate: string
