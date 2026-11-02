@@ -45,6 +45,24 @@ npm run dev
 The server runs migrations and seeds the local database before starting. The
 SQLite file is created at `data/focusflow.db`.
 
+## Mobile app
+
+The iOS-first Expo app lives in `mobile/` and is developed independently from
+the web app. It uses Expo Router and native theme tokens, and the planned
+mobile data layer will be local-first rather than dependent on the Express
+server.
+
+To open the current mobile scaffold on a physical iPhone through Expo Go:
+
+```bash
+cd mobile
+npm install
+npm run start:device
+```
+
+Scan the QR code with the iPhone camera. See [`mobile/README.md`](mobile/README.md)
+for LAN mode, type checking, and EAS development/production build commands.
+
 ## Database commands
 
 ```bash
