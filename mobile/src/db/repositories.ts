@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, gte, isNull, lte } from 'drizzle-orm'
 
 import { db, type AppDatabase } from './database'
+import { DEFAULT_APP_SETTINGS } from './defaults'
 import {
   activities,
   appSettings,
@@ -20,6 +21,7 @@ import {
   type Notification,
   type WeeklyGoal,
 } from './schema'
+import { parseFocusFlowBackup, type FocusFlowBackup } from '../types/backup'
 import type { FocusSessionRow } from '../types/analytics'
 
 type ActivityChanges = Partial<Omit<NewActivity, 'id'>>
@@ -76,6 +78,11 @@ export interface NotificationRepository {
   markAllRead(readAt?: string): void
 }
 
+export interface DataRepository {
+  export(): FocusFlowBackup
+  replace(input: unknown): void
+}
+
 export interface MobileRepositories {
   activities: ActivityRepository
   focusSessions: FocusSessionRepository
@@ -83,6 +90,7 @@ export interface MobileRepositories {
   weeklyGoals: WeeklyGoalRepository
   appSettings: AppSettingsRepository
   notifications: NotificationRepository
+  data: DataRepository
 }
 
 export function createRepositories(database: AppDatabase): MobileRepositories {
@@ -268,6 +276,41 @@ export function createRepositories(database: AppDatabase): MobileRepositories {
           .set({ readAt })
           .where(isNull(notifications.readAt))
           .run()
+      },
+    },
+    data: {
+      export: () => ({
+        exportedAt: new Date().toISOString(),
+        settings: database.select().from(appSettings).where(eq(appSettings.id, 1)).get() ?? null,
+        activities: database.select().from(activities).orderBy(asc(activities.id)).all(),
+        focusSessions: database.select().from(focusSessions).orderBy(asc(focusSessions.id)).all(),
+        dailyNotes: database.select().from(dailyNotes).orderBy(asc(dailyNotes.activityDate)).all(),
+        weeklyGoals: database.select().from(weeklyGoals).orderBy(asc(weeklyGoals.weekStart)).all(),
+        notifications: database.select().from(notifications).orderBy(asc(notifications.id)).all(),
+      }),
+      replace: (input) => {
+        const backup = parseFocusFlowBackup(input)
+        const settings = backup.settings
+          ? { ...backup.settings, id: 1 }
+          : { ...DEFAULT_APP_SETTINGS }
+
+        database.transaction((tx) => {
+          tx.delete(focusSessions).run()
+          tx.delete(dailyNotes).run()
+          tx.delete(weeklyGoals).run()
+          tx.delete(notifications).run()
+          tx.delete(activities).run()
+          tx.delete(appSettings).run()
+
+          if (backup.activities.length) tx.insert(activities).values(backup.activities).run()
+          if (backup.focusSessions.length) {
+            tx.insert(focusSessions).values(backup.focusSessions).run()
+          }
+          if (backup.dailyNotes.length) tx.insert(dailyNotes).values(backup.dailyNotes).run()
+          if (backup.weeklyGoals.length) tx.insert(weeklyGoals).values(backup.weeklyGoals).run()
+          if (backup.notifications.length) tx.insert(notifications).values(backup.notifications).run()
+          tx.insert(appSettings).values(settings).run()
+        })
       },
     },
   }

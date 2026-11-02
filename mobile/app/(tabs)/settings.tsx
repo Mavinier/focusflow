@@ -1,6 +1,9 @@
 import { useFocusEffect } from 'expo-router'
 import { useCallback, useState } from 'react'
-import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native'
+import * as DocumentPicker from 'expo-document-picker'
+import * as FileSystem from 'expo-file-system/legacy'
+import * as Sharing from 'expo-sharing'
+import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native'
 
 import { ACTIVITY_COLOR_PALETTE } from '../../src/data/activityColors'
 import { AppScreen } from '../../src/components/AppScreen'
@@ -9,6 +12,12 @@ import { repositories } from '../../src/db/repositories'
 import type { Activity } from '../../src/db/schema'
 import { colors, radii, spacing, typography } from '../../src/theme/tokens'
 import type { ActivityIconName } from '../../src/types/tracker'
+import {
+  getNotificationPermission,
+  refreshLocalReminders,
+  requestNotificationPermission,
+  type NotificationPermission,
+} from '../../src/services/notifications'
 
 function SettingRow({
   disabled = false,
@@ -138,15 +147,28 @@ export default function SettingsScreen() {
   const [newAreaColor, setNewAreaColor] = useState<string>(ACTIVITY_COLOR_PALETTE[0])
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('undetermined')
+  const [scheduledReminderCount, setScheduledReminderCount] = useState(0)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isDataBusy, setIsDataBusy] = useState(false)
 
   useFocusEffect(
     useCallback(() => {
+      let active = true
       try {
         setSettings(repositories.appSettings.get())
         setActivities(repositories.activities.list())
         setError(null)
       } catch (loadError: unknown) {
         setError(loadError instanceof Error ? loadError.message : 'Unable to load settings.')
+      }
+      void getNotificationPermission().then((permission) => {
+        if (active) setNotificationPermission(permission)
+      }).catch(() => {
+        if (active) setNotificationPermission('undetermined')
+      })
+      return () => {
+        active = false
       }
     }, []),
   )
@@ -159,24 +181,140 @@ export default function SettingsScreen() {
     setMessage(null)
   }
 
-  function saveSettings() {
+  async function saveSettings() {
     if (!settings) return
+    setIsSaving(true)
     try {
       const updated = repositories.appSettings.update({
         displayName: settings.displayName.trim() || 'FocusFlow',
-        defaultWeeklyTargetMinutes: Math.max(0, settings.defaultWeeklyTargetMinutes),
+        defaultWeeklyTargetMinutes: Math.min(
+          10080,
+          Math.max(30, settings.defaultWeeklyTargetMinutes),
+        ),
         weekStartsOn: settings.weekStartsOn,
         theme: settings.theme,
         notificationsEnabled: settings.notificationsEnabled,
         goalNotificationsEnabled: settings.goalNotificationsEnabled,
         streakNotificationsEnabled: settings.streakNotificationsEnabled,
         inactivityNotificationsEnabled: settings.inactivityNotificationsEnabled,
-        inactivityThresholdDays: Math.max(1, settings.inactivityThresholdDays),
+        inactivityThresholdDays: Math.min(30, Math.max(1, settings.inactivityThresholdDays)),
       })
       setSettings(updated)
-      setMessage('Preferences saved.')
+      const reminderResult = await refreshLocalReminders()
+      setNotificationPermission(reminderResult.permission)
+      setScheduledReminderCount(reminderResult.scheduledCount)
+      setMessage(
+        reminderResult.scheduledCount
+          ? `Preferences saved · ${reminderResult.scheduledCount} local reminder${reminderResult.scheduledCount === 1 ? '' : 's'} scheduled.`
+          : 'Preferences saved.',
+      )
+      setError(null)
     } catch (saveError: unknown) {
       setError(saveError instanceof Error ? saveError.message : 'Unable to save settings.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  async function enableLocalReminders() {
+    if (!settings) return
+    setIsSaving(true)
+    try {
+      const permission = await requestNotificationPermission()
+      setNotificationPermission(permission)
+      if (permission !== 'granted') {
+        setError('Notification permission is not enabled. Allow it in iPhone Settings to receive reminders.')
+        return
+      }
+
+      const updated = repositories.appSettings.update({ notificationsEnabled: 1 })
+      setSettings(updated)
+      const reminderResult = await refreshLocalReminders()
+      setScheduledReminderCount(reminderResult.scheduledCount)
+      setMessage(`${reminderResult.scheduledCount} local reminder${reminderResult.scheduledCount === 1 ? '' : 's'} scheduled.`)
+      setError(null)
+    } catch (notificationError: unknown) {
+      setError(notificationError instanceof Error ? notificationError.message : 'Unable to enable notifications.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  async function exportData() {
+    setIsDataBusy(true)
+    try {
+      const fileName = `focusflow-backup-${new Date().toISOString().slice(0, 10)}.json`
+      const uri = `${FileSystem.cacheDirectory}${fileName}`
+      await FileSystem.writeAsStringAsync(uri, JSON.stringify(repositories.data.export(), null, 2), {
+        encoding: FileSystem.EncodingType.UTF8,
+      })
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          dialogTitle: 'Export FocusFlow backup',
+          mimeType: 'application/json',
+          UTI: 'public.json',
+        })
+        setMessage('Backup ready to save or share.')
+      } else {
+        setMessage(`Backup saved at ${uri}`)
+      }
+      setError(null)
+    } catch (exportError: unknown) {
+      setError(exportError instanceof Error ? exportError.message : 'Unable to export your data.')
+    } finally {
+      setIsDataBusy(false)
+    }
+  }
+
+  async function importData() {
+    setIsDataBusy(true)
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        copyToCacheDirectory: true,
+        type: 'application/json',
+      })
+      if (result.canceled || !result.assets[0]?.uri) return
+
+      const contents = await FileSystem.readAsStringAsync(result.assets[0].uri, {
+        encoding: FileSystem.EncodingType.UTF8,
+      })
+      Alert.alert(
+        'Replace local data?',
+        'Importing a backup replaces the activity history, goals, areas, and settings currently on this phone.',
+        [
+          { style: 'cancel', text: 'Cancel' },
+          {
+            onPress: () => {
+              void completeImport(contents)
+            },
+            style: 'destructive',
+            text: 'Import backup',
+          },
+        ],
+      )
+    } catch (importError: unknown) {
+      setError(importError instanceof Error ? importError.message : 'Unable to read that backup file.')
+    } finally {
+      setIsDataBusy(false)
+    }
+  }
+
+  async function completeImport(contents: string) {
+    setIsDataBusy(true)
+    try {
+      repositories.data.replace(JSON.parse(contents) as unknown)
+      setSettings(repositories.appSettings.get())
+      setActivities(repositories.activities.list())
+      const reminderResult = await refreshLocalReminders()
+      setNotificationPermission(reminderResult.permission)
+      setScheduledReminderCount(reminderResult.scheduledCount)
+      setMessage('Backup imported successfully.')
+      setError(null)
+    } catch (importError: unknown) {
+      setError(importError instanceof Error ? importError.message : 'That backup could not be imported.')
+    } finally {
+      setIsDataBusy(false)
     }
   }
 
@@ -274,12 +412,34 @@ export default function SettingsScreen() {
             onValueChange={(value) => updateSetting('streakNotificationsEnabled', value ? 1 : 0)}
             value={Boolean(settings.streakNotificationsEnabled)}
           />
+          <View style={styles.divider} />
+          <SettingRow
+            description="Remind you after several days without a focus session."
+            disabled={!settings.notificationsEnabled}
+            label="Inactivity reminders"
+            onValueChange={(value) => updateSetting('inactivityNotificationsEnabled', value ? 1 : 0)}
+            value={Boolean(settings.inactivityNotificationsEnabled)}
+          />
+          <View style={styles.thresholdRow}>
+            <Text style={styles.settingDescription}>Remind me after</Text>
+            <TextInput
+              accessibilityLabel="Inactivity threshold in days"
+              editable={Boolean(settings.notificationsEnabled && settings.inactivityNotificationsEnabled)}
+              keyboardType="number-pad"
+              maxLength={2}
+              onChangeText={(value) => updateSetting('inactivityThresholdDays', Number(value) || 1)}
+              style={styles.thresholdInput}
+              value={String(settings.inactivityThresholdDays)}
+            />
+            <Text style={styles.settingDescription}>days</Text>
+          </View>
           <Pressable
             accessibilityRole="button"
-            onPress={saveSettings}
+            disabled={isSaving}
+            onPress={() => { void saveSettings() }}
             style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
           >
-            <Text style={styles.secondaryButtonText}>Save preferences</Text>
+            <Text style={styles.secondaryButtonText}>{isSaving ? 'Saving…' : 'Save preferences'}</Text>
           </Pressable>
         </SurfaceCard>
       ) : null}
@@ -319,16 +479,54 @@ export default function SettingsScreen() {
 
       <SurfaceCard title="Notifications">
         <Text style={styles.body}>
-          Notification scheduling is local-only. Save preferences above to keep
-          these choices in the on-device database.
+          Reminders are scheduled on this phone and never sent through a server.
         </Text>
+        <View style={styles.notificationStatus}>
+          <Text style={styles.sectionLabel}>System permission</Text>
+          <Text style={styles.notificationPermission}>{permissionLabel(notificationPermission)}</Text>
+        </View>
+        <Text style={styles.body}>
+          {scheduledReminderCount
+            ? `${scheduledReminderCount} reminder${scheduledReminderCount === 1 ? '' : 's'} currently scheduled.`
+            : 'Save your preferences or enable reminders to schedule local nudges.'}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          disabled={isSaving}
+          onPress={() => { void enableLocalReminders() }}
+          style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
+        >
+          <Text style={styles.secondaryButtonText}>
+            {notificationPermission === 'granted' ? 'Refresh local reminders' : 'Allow local reminders'}
+          </Text>
+        </Pressable>
       </SurfaceCard>
 
       <SurfaceCard
-        description="Your activity data is stored in the app's on-device SQLite database."
+        description="Backups are compatible with FocusFlow web exports and stay under your control."
         title="Data"
       >
-        <Text style={styles.body}>Focus sessions and areas stay on this device.</Text>
+        <Text style={styles.body}>
+          Export a JSON backup to Files or another app. Importing replaces the local database after confirmation.
+        </Text>
+        <View style={styles.dataActions}>
+          <Pressable
+            accessibilityRole="button"
+            disabled={isDataBusy}
+            onPress={() => { void exportData() }}
+            style={({ pressed }) => [styles.secondaryButton, styles.dataButton, pressed && styles.pressed]}
+          >
+            <Text style={styles.secondaryButtonText}>{isDataBusy ? 'Working…' : 'Export JSON backup'}</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            disabled={isDataBusy}
+            onPress={() => { void importData() }}
+            style={({ pressed }) => [styles.secondaryButton, styles.dataButton, pressed && styles.pressed]}
+          >
+            <Text style={styles.secondaryButtonText}>Import JSON backup</Text>
+          </Pressable>
+        </View>
       </SurfaceCard>
 
       <View style={styles.version}>
@@ -336,6 +534,12 @@ export default function SettingsScreen() {
       </View>
     </AppScreen>
   )
+}
+
+function permissionLabel(permission: NotificationPermission) {
+  if (permission === 'granted') return 'Allowed'
+  if (permission === 'denied') return 'Not allowed'
+  return 'Not requested'
 }
 
 const styles = StyleSheet.create({
@@ -358,6 +562,23 @@ const styles = StyleSheet.create({
   settingDescription: {
     ...typography.body,
     color: colors.textMuted,
+  },
+  thresholdRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  thresholdInput: {
+    ...typography.body,
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.border,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    color: colors.text,
+    minWidth: 54,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    textAlign: 'center',
   },
   fieldLabel: {
     ...typography.label,
@@ -392,6 +613,21 @@ const styles = StyleSheet.create({
   sectionLabel: {
     ...typography.label,
     color: colors.textSubtle,
+  },
+  notificationStatus: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  notificationPermission: {
+    ...typography.label,
+    color: colors.success,
+  },
+  dataActions: {
+    gap: spacing.sm,
+  },
+  dataButton: {
+    flex: 1,
   },
   activityList: {
     gap: spacing.xl,

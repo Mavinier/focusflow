@@ -12,6 +12,7 @@ import {
 import { AppScreen } from '../src/components/AppScreen'
 import { SurfaceCard } from '../src/components/SurfaceCard'
 import { repositories } from '../src/db/repositories'
+import { refreshLocalReminders } from '../src/services/notifications'
 import { colors, radii, spacing, typography } from '../src/theme/tokens'
 import {
   formatDuration,
@@ -64,6 +65,7 @@ export default function LogActivityScreen() {
         durationMinutes,
         note: note.trim() || null,
       })
+      void refreshLocalReminders().catch(() => undefined)
       router.back()
     } catch (saveError: unknown) {
       setError(saveError instanceof Error ? saveError.message : 'Unable to save activity.')

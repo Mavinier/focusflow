@@ -5,14 +5,19 @@ import { StyleSheet, Text, View } from 'react-native'
 
 import { colors } from '../src/theme/tokens'
 import { initializeDatabase } from '../src/db/database'
+import { configureNotificationHandler, refreshLocalReminders } from '../src/services/notifications'
 
 export default function RootLayout() {
   const [databaseError, setDatabaseError] = useState<Error | null>(null)
   const [databaseReady, setDatabaseReady] = useState(false)
 
   useEffect(() => {
+    configureNotificationHandler()
     initializeDatabase()
-      .then(() => setDatabaseReady(true))
+      .then(() => {
+        void refreshLocalReminders().catch(() => undefined)
+        setDatabaseReady(true)
+      })
       .catch((error: unknown) => {
         setDatabaseError(error instanceof Error ? error : new Error(String(error)))
       })

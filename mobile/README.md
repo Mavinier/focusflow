@@ -51,6 +51,18 @@ Keep the generated SQL and journal in `drizzle/`, and update the native
 migration bundle in `src/db/migrations.ts` with the new journal entry and SQL.
 Existing rows are preserved; seeding only inserts missing defaults.
 
+## Reminders and backups
+
+Settings can request iOS notification permission and schedule local inactivity,
+weekly-goal, and streak reminders. Reminder requests are refreshed locally when
+preferences or activity data changes; no server account or push-token service
+is used.
+
+The Data section exports the complete local database as a JSON file compatible
+with the web app's export shape. Importing a backup replaces the phone's local
+data after confirmation, and the import is validated and applied in one SQLite
+transaction.
+
 ## EAS builds
 
 The EAS profiles are prepared for a development client, internal preview, and
