@@ -10,8 +10,8 @@ import ActivityFormModal from './components/ActivityFormModal'
 import GoalsPage from './components/GoalsPage'
 import InsightsPage from './components/InsightsPage'
 import OverviewPage from './components/OverviewPage'
-import PlaceholderPage from './components/PlaceholderPage'
 import Sidebar from './components/Sidebar'
+import SettingsPage from './components/SettingsPage'
 import Topbar from './components/Topbar'
 import WeeklyGoalModal from './components/WeeklyGoalModal'
 import type { AppOutletContext } from './types/app'
@@ -237,13 +237,7 @@ function App() {
           />
           <Route
             path="/settings"
-            element={
-              <PlaceholderPage
-                copy="Preferences and activity management will live here in a later pass."
-                eyebrow="Coming soon"
-                title="Settings"
-              />
-            }
+            element={<SettingsPage />}
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

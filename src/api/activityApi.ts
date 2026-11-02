@@ -12,6 +12,43 @@ export type ActivityOption = {
   icon: ActivityIconName
 }
 
+export type UpdateActivityInput = {
+  name?: string
+  color?: string
+  icon?: ActivityIconName
+}
+
+export type AppSettings = {
+  id: number
+  displayName: string
+  defaultWeeklyTargetMinutes: number
+  weekStartsOn: number
+  theme: 'dark'
+  notificationsEnabled: boolean
+  goalNotificationsEnabled: boolean
+  streakNotificationsEnabled: boolean
+  inactivityNotificationsEnabled: boolean
+  inactivityThresholdDays: number
+}
+
+export type UpdateSettingsInput = Partial<Omit<AppSettings, 'id'>>
+
+export type NotificationItem = {
+  id: number
+  eventKey: string
+  type: string
+  title: string
+  message: string
+  href: string
+  createdAt: string
+  readAt: string | null
+}
+
+export type NotificationsResponse = {
+  notifications: NotificationItem[]
+  unreadCount: number
+}
+
 export type CreateFocusSessionInput = {
   activityDate: string
   activityName: string
@@ -84,6 +121,72 @@ export async function fetchActivities(): Promise<ActivityOption[]> {
   }
 
   return (await response.json()) as ActivityOption[]
+}
+
+export async function updateActivity(id: number, input: UpdateActivityInput) {
+  const response = await fetch(`/api/activities/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null
+    throw new Error(data?.error ?? 'Unable to update activity.')
+  }
+
+  return (await response.json()) as ActivityOption
+}
+
+export async function fetchSettings(): Promise<AppSettings> {
+  const response = await fetch('/api/settings')
+
+  if (!response.ok) {
+    throw new Error('Unable to load settings.')
+  }
+
+  return (await response.json()) as AppSettings
+}
+
+export async function updateSettings(input: UpdateSettingsInput): Promise<AppSettings> {
+  const response = await fetch('/api/settings', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null
+    throw new Error(data?.error ?? 'Unable to save settings.')
+  }
+
+  return (await response.json()) as AppSettings
+}
+
+export async function fetchNotifications(): Promise<NotificationsResponse> {
+  const response = await fetch('/api/notifications')
+
+  if (!response.ok) {
+    throw new Error('Unable to load notifications.')
+  }
+
+  return (await response.json()) as NotificationsResponse
+}
+
+export async function markNotificationRead(id: number) {
+  const response = await fetch(`/api/notifications/${id}/read`, { method: 'PATCH' })
+
+  if (!response.ok) {
+    throw new Error('Unable to mark notification as read.')
+  }
+}
+
+export async function markAllNotificationsRead() {
+  const response = await fetch('/api/notifications/read-all', { method: 'POST' })
+
+  if (!response.ok) {
+    throw new Error('Unable to mark notifications as read.')
+  }
 }
 
 export async function createFocusSession(input: CreateFocusSessionInput) {

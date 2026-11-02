@@ -48,3 +48,33 @@ export const weeklyGoals = sqliteTable(
     weekStartIndex: uniqueIndex('weekly_goals_week_start_idx').on(table.weekStart),
   }),
 )
+
+export const appSettings = sqliteTable('app_settings', {
+  id: integer('id').primaryKey(),
+  displayName: text('display_name').notNull(),
+  defaultWeeklyTargetMinutes: integer('default_weekly_target_minutes').notNull(),
+  weekStartsOn: integer('week_starts_on').notNull(),
+  theme: text('theme').notNull(),
+  notificationsEnabled: integer('notifications_enabled').notNull(),
+  goalNotificationsEnabled: integer('goal_notifications_enabled').notNull(),
+  streakNotificationsEnabled: integer('streak_notifications_enabled').notNull(),
+  inactivityNotificationsEnabled: integer('inactivity_notifications_enabled').notNull(),
+  inactivityThresholdDays: integer('inactivity_threshold_days').notNull(),
+})
+
+export const notifications = sqliteTable(
+  'notifications',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    eventKey: text('event_key').notNull(),
+    type: text('type').notNull(),
+    title: text('title').notNull(),
+    message: text('message').notNull(),
+    href: text('href').notNull(),
+    createdAt: text('created_at').notNull(),
+    readAt: text('read_at'),
+  },
+  (table) => ({
+    eventKeyIndex: uniqueIndex('notifications_event_key_idx').on(table.eventKey),
+  }),
+)

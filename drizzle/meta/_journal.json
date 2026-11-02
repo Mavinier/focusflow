@@ -15,6 +15,13 @@
       "when": 1793379804264,
       "tag": "0001_peaceful_kat_farrell",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793626743481,
+      "tag": "0002_flaky_gambit",
+      "breakpoints": true
     }
   ]
 }

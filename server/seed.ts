@@ -1,6 +1,12 @@
 import { createDayData, SAMPLE_LAST_TRACKED_DATE } from '../src/data/activityData'
 import { db } from './db/client'
-import { activities, dailyNotes, focusSessions, weeklyGoals } from './db/schema'
+import {
+  activities,
+  appSettings,
+  dailyNotes,
+  focusSessions,
+  weeklyGoals,
+} from './db/schema'
 import { DEFAULT_WEEKLY_TARGET_MINUTES, getWeekStart } from './utils/week'
 
 const dayData = createDayData()
@@ -76,6 +82,26 @@ if (!existingWeeklyGoal) {
     })
     .run()
   console.log('Created the default weekly focus goal.')
+}
+
+const existingSettings = db.select({ id: appSettings.id }).from(appSettings).limit(1).get()
+
+if (!existingSettings) {
+  db.insert(appSettings)
+    .values({
+      id: 1,
+      displayName: 'Marlon Moura',
+      defaultWeeklyTargetMinutes: DEFAULT_WEEKLY_TARGET_MINUTES,
+      weekStartsOn: 1,
+      theme: 'dark',
+      notificationsEnabled: 1,
+      goalNotificationsEnabled: 1,
+      streakNotificationsEnabled: 1,
+      inactivityNotificationsEnabled: 1,
+      inactivityThresholdDays: 3,
+    })
+    .run()
+  console.log('Created the default FocusFlow settings.')
 }
 
 function formatTime(totalMinutes: number) {

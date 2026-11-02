@@ -1,8 +1,20 @@
 import express from 'express'
-import { and, asc, eq, gte, lte } from 'drizzle-orm'
+import { and, asc, eq, gte, isNull, lte } from 'drizzle-orm'
 import { db } from './db/client'
-import { activities, dailyNotes, focusSessions, weeklyGoals } from './db/schema'
+import {
+  activities,
+  appSettings,
+  dailyNotes,
+  focusSessions,
+  notifications,
+  weeklyGoals,
+} from './db/schema'
 import { DEFAULT_WEEKLY_TARGET_MINUTES, getWeekEnd, getWeekStart } from './utils/week'
+import {
+  ensureAppSettings,
+  listNotifications,
+  serializeSettings,
+} from './utils/notifications'
 import { ACTIVITY_COLOR_PALETTE } from '../src/data/activityColors'
 import type { ActivityIconName, DayData } from '../src/types/tracker'
 
@@ -87,6 +99,7 @@ function getNextActivityColor() {
 }
 
 app.use(express.json())
+ensureAppSettings()
 
 app.get('/api/health', (_request, response) => {
   response.json({ status: 'ok' })
@@ -170,6 +183,193 @@ function isDateKey(value: string) {
 
 app.get('/api/activities', (_request, response) => {
   response.json(db.select().from(activities).orderBy(asc(activities.name)).all())
+})
+
+app.patch('/api/activities/:id', (request, response) => {
+  const activityId = Number(request.params.id)
+  const body = request.body as Record<string, unknown>
+
+  if (!Number.isInteger(activityId) || activityId <= 0) {
+    response.status(400).json({ error: 'id must be a positive integer' })
+    return
+  }
+
+  const activity = db
+    .select()
+    .from(activities)
+    .where(eq(activities.id, activityId))
+    .get()
+  if (!activity) {
+    response.status(404).json({ error: 'Activity not found' })
+    return
+  }
+
+  const updates: Partial<typeof activities.$inferInsert> = {}
+  if (body.name !== undefined) {
+    if (typeof body.name !== 'string' || !body.name.trim()) {
+      response.status(400).json({ error: 'name must be a non-empty string' })
+      return
+    }
+
+    const nextName = body.name.trim()
+    const duplicate = db
+      .select({ id: activities.id })
+      .from(activities)
+      .where(eq(activities.name, nextName))
+      .get()
+    if (duplicate && duplicate.id !== activityId) {
+      response.status(409).json({ error: 'An activity with that name already exists' })
+      return
+    }
+    updates.name = nextName
+  }
+
+  if (body.color !== undefined) {
+    if (typeof body.color !== 'string' || !/^#[\da-f]{6}$/i.test(body.color)) {
+      response.status(400).json({ error: 'color must be a six-digit hex value' })
+      return
+    }
+    updates.color = body.color
+  }
+
+  if (body.icon !== undefined) {
+    const validIcons: ActivityIconName[] = ['code', 'database', 'book', 'work', 'notes']
+    if (typeof body.icon !== 'string' || !validIcons.includes(body.icon as ActivityIconName)) {
+      response.status(400).json({ error: 'icon is not supported' })
+      return
+    }
+    updates.icon = body.icon
+  }
+
+  if (!Object.keys(updates).length) {
+    response.status(400).json({ error: 'At least one activity field is required' })
+    return
+  }
+
+  const updatedActivity = db
+    .update(activities)
+    .set(updates)
+    .where(eq(activities.id, activityId))
+    .returning()
+    .get()
+  response.json(updatedActivity)
+})
+
+app.get('/api/settings', (_request, response) => {
+  response.json(serializeSettings(ensureAppSettings()))
+})
+
+app.patch('/api/settings', (request, response) => {
+  const body = request.body as Record<string, unknown>
+  const updates: Partial<typeof appSettings.$inferInsert> = {}
+
+  if (body.displayName !== undefined) {
+    if (typeof body.displayName !== 'string' || !body.displayName.trim()) {
+      response.status(400).json({ error: 'displayName must be a non-empty string' })
+      return
+    }
+    updates.displayName = body.displayName.trim().slice(0, 80)
+  }
+
+  if (body.defaultWeeklyTargetMinutes !== undefined) {
+    if (
+      typeof body.defaultWeeklyTargetMinutes !== 'number' ||
+      !Number.isInteger(body.defaultWeeklyTargetMinutes) ||
+      body.defaultWeeklyTargetMinutes < 30 ||
+      body.defaultWeeklyTargetMinutes > 10080
+    ) {
+      response.status(400).json({ error: 'defaultWeeklyTargetMinutes must be between 30 and 10080' })
+      return
+    }
+    updates.defaultWeeklyTargetMinutes = body.defaultWeeklyTargetMinutes
+  }
+
+  if (body.weekStartsOn !== undefined) {
+    if (
+      typeof body.weekStartsOn !== 'number' ||
+      !Number.isInteger(body.weekStartsOn) ||
+      body.weekStartsOn < 0 ||
+      body.weekStartsOn > 6
+    ) {
+      response.status(400).json({ error: 'weekStartsOn must be a day number between 0 and 6' })
+      return
+    }
+    updates.weekStartsOn = body.weekStartsOn
+  }
+
+  if (body.theme !== undefined) {
+    if (body.theme !== 'dark') {
+      response.status(400).json({ error: 'Only the dark theme is currently supported' })
+      return
+    }
+    updates.theme = 'dark'
+  }
+
+  const booleanFields = [
+    'notificationsEnabled',
+    'goalNotificationsEnabled',
+    'streakNotificationsEnabled',
+    'inactivityNotificationsEnabled',
+  ] as const
+  for (const field of booleanFields) {
+    if (body[field] !== undefined) {
+      if (typeof body[field] !== 'boolean') {
+        response.status(400).json({ error: `${field} must be a boolean` })
+        return
+      }
+      updates[field] = body[field] ? 1 : 0
+    }
+  }
+
+  if (body.inactivityThresholdDays !== undefined) {
+    if (
+      typeof body.inactivityThresholdDays !== 'number' ||
+      !Number.isInteger(body.inactivityThresholdDays) ||
+      body.inactivityThresholdDays < 1 ||
+      body.inactivityThresholdDays > 30
+    ) {
+      response.status(400).json({ error: 'inactivityThresholdDays must be between 1 and 30' })
+      return
+    }
+    updates.inactivityThresholdDays = body.inactivityThresholdDays
+  }
+
+  if (!Object.keys(updates).length) {
+    response.status(400).json({ error: 'At least one setting is required' })
+    return
+  }
+
+  db.update(appSettings)
+    .set(updates)
+    .where(eq(appSettings.id, 1))
+    .run()
+  response.json(serializeSettings(ensureAppSettings()))
+})
+
+app.get('/api/notifications', (_request, response) => {
+  response.json(listNotifications())
+})
+
+app.patch('/api/notifications/:id/read', (request, response) => {
+  const notificationId = Number(request.params.id)
+  if (!Number.isInteger(notificationId) || notificationId <= 0) {
+    response.status(400).json({ error: 'id must be a positive integer' })
+    return
+  }
+
+  db.update(notifications)
+    .set({ readAt: new Date().toISOString() })
+    .where(eq(notifications.id, notificationId))
+    .run()
+  response.status(204).send()
+})
+
+app.post('/api/notifications/read-all', (_request, response) => {
+  db.update(notifications)
+    .set({ readAt: new Date().toISOString() })
+    .where(isNull(notifications.readAt))
+    .run()
+  response.status(204).send()
 })
 
 app.get('/api/years', (_request, response) => {

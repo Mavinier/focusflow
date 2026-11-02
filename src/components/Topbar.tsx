@@ -1,5 +1,8 @@
 import { Bell, CalendarDays, ChevronDown, Plus } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
+import { fetchNotifications } from '../api/activityApi'
+import NotificationCenter from './NotificationCenter'
 
 type TopbarProps = {
   availableYears: number[]
@@ -18,6 +21,19 @@ const PAGE_LABELS: Record<string, string> = {
 function Topbar({ availableYears, onLogActivity, onYearChange, year }: TopbarProps) {
   const { pathname } = useLocation()
   const pageLabel = PAGE_LABELS[pathname] ?? 'Activity overview'
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const handleUnreadCountChange = useCallback((count: number) => {
+    setUnreadCount(count)
+  }, [])
+
+  useEffect(() => {
+    fetchNotifications()
+      .then((data) => setUnreadCount(data.unreadCount))
+      .catch(() => {
+        // The bell remains available if notifications are temporarily unavailable.
+      })
+  }, [])
 
   return (
     <header className="topbar">
@@ -27,10 +43,23 @@ function Topbar({ availableYears, onLogActivity, onYearChange, year }: TopbarPro
         <strong>{pageLabel}</strong>
       </div>
       <div className="topbar-actions">
-        <button className="icon-button" type="button" aria-label="Notifications">
-          <Bell size={17} />
-          <span className="notification-dot" />
-        </button>
+        <div className="notification-wrapper">
+          <button
+            aria-expanded={isNotificationOpen}
+            className="icon-button"
+            type="button"
+            aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}
+            onClick={() => setIsNotificationOpen((open) => !open)}
+          >
+            <Bell size={17} />
+            {unreadCount > 0 && <span className="notification-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+          </button>
+          <NotificationCenter
+            isOpen={isNotificationOpen}
+            onClose={() => setIsNotificationOpen(false)}
+            onUnreadCountChange={handleUnreadCountChange}
+          />
+        </div>
         <label className="outline-button year-selector">
           <CalendarDays size={16} />
           <select
