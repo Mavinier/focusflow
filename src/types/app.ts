@@ -17,6 +17,7 @@ export type AppOutletContext = {
   useRollingHeatmap: boolean
   isLoading: boolean
   onAddEntry: () => void
+  onEditWeeklyGoal: () => void
   onYearChange: (year: number) => void
   periodDayCount: number
   selectedDate: string

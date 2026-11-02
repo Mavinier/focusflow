@@ -7,6 +7,7 @@ import {
   type WeeklyGoalProgress,
 } from './api/activityApi'
 import ActivityFormModal from './components/ActivityFormModal'
+import GoalsPage from './components/GoalsPage'
 import InsightsPage from './components/InsightsPage'
 import OverviewPage from './components/OverviewPage'
 import PlaceholderPage from './components/PlaceholderPage'
@@ -160,6 +161,7 @@ function AppLayout() {
   const handleWeeklyGoalSaved = (progress: WeeklyGoalProgress) => {
     setWeeklyProgress(progress)
     setIsWeeklyGoalModalOpen(false)
+    setDataVersion((version) => version + 1)
   }
 
   const outletContext: AppOutletContext = {
@@ -176,6 +178,7 @@ function AppLayout() {
     isLoading,
     onHeatmapModeChange: setUseRollingHeatmap,
     onAddEntry: () => setIsActivityModalOpen(true),
+    onEditWeeklyGoal: () => setIsWeeklyGoalModalOpen(true),
     onYearChange: handleYearChange,
     periodDayCount,
     selectedDate,
@@ -230,13 +233,7 @@ function App() {
           <Route path="/insights" element={<InsightsPage />} />
           <Route
             path="/goals"
-            element={
-              <PlaceholderPage
-                copy="Weekly and monthly targets will live here. Use the sidebar card to edit this week’s focus goal."
-                eyebrow="Coming soon"
-                title="Goals"
-              />
-            }
+            element={<GoalsPage />}
           />
           <Route
             path="/settings"
