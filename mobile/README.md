@@ -32,6 +32,60 @@ npm run doctor
 npm run web
 ```
 
+## Installable preview build
+
+Expo Go is only needed for development. To install FocusFlow as a standalone
+preview app, use an EAS internal build. This build includes the local SQLite
+database, notifications, app icon, and splash screen, and it does not require
+Expo Go or the Express server after installation.
+
+Requirements:
+
+- An Expo account
+- An Apple Developer account
+- An iPhone registered for internal distribution
+
+Log in and link the project the first time:
+
+```bash
+npx eas-cli@latest login
+npx eas-cli@latest init
+```
+
+Start the iOS preview build:
+
+```bash
+npx eas-cli@latest build --profile preview --platform ios
+```
+
+When the build finishes, open the build details link on the iPhone and follow
+the installation instructions. EAS may ask for Apple signing credentials and
+the device UDID during the first build.
+
+The preview build is best for personal daily use and internal testing. It can
+run without an internet connection after installation. Internet is only needed
+to create or download the build.
+
+## Production and TestFlight build
+
+Use the production profile when the app should be distributed through
+TestFlight or the App Store:
+
+```bash
+npx eas-cli@latest build --profile production --platform ios
+npx eas-cli@latest submit --platform ios --latest
+```
+
+After submission processing completes, invite the device through TestFlight.
+Production builds use the same on-device SQLite database and do not require the
+FocusFlow web server.
+
+To inspect previous builds:
+
+```bash
+npx eas-cli@latest build:list
+```
+
 ## Local database
 
 The app stores its data in `focusflow.db` using Expo SQLite and Drizzle.
