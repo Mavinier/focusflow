@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "scheme": "focusflow",
     "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0d1114"
-    },
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
@@ -29,6 +24,15 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0d1114",
+          "image": "./assets/icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain"
+        }
+      ],
       "expo-dev-client",
       "expo-notifications"
     ],

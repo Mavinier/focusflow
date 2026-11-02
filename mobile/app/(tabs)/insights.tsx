@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
@@ -42,6 +43,7 @@ export default function InsightsScreen() {
   const currentYear = Number(today.slice(0, 4))
   const [period, setPeriod] = useState<InsightPeriod>('year')
   const [showChartScale, setShowChartScale] = useState(true)
+  const [isPlanExpanded, setIsPlanExpanded] = useState(false)
   const [sessions, setSessions] = useState<FocusSessionRow[]>([])
   const [notes, setNotes] = useState<DailyNoteRow[]>([])
   const [goals, setGoals] = useState(repositories.weeklyGoals.list())
@@ -242,12 +244,40 @@ export default function InsightsScreen() {
           />
         </SurfaceCard>
         <SurfaceCard description="Actual minutes compared with each weekly target." title="Planned vs actual">
-          {weeks.length ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: isPlanExpanded }}
+            disabled={!weeks.length}
+            onPress={() => setIsPlanExpanded((expanded) => !expanded)}
+            style={({ pressed }) => [
+              styles.planToggle,
+              !weeks.length && styles.planToggleDisabled,
+              pressed && styles.planTogglePressed,
+            ]}
+          >
+            <Text style={styles.planToggleText}>
+              {weeks.length
+                ? isPlanExpanded ? 'Hide weekly history' : `Show ${weeks.length} weeks`
+                : 'No weeks in this period'}
+            </Text>
+            {weeks.length ? (
+              <Ionicons
+                color={colors.accent}
+                name={isPlanExpanded ? 'chevron-up' : 'chevron-down'}
+                size={18}
+              />
+            ) : null}
+          </Pressable>
+          {isPlanExpanded && weeks.length ? (
             <View style={styles.planList}>
               {weeks.slice(-8).reverse().map((week) => <PlanRow key={week.weekStart} week={week} />)}
             </View>
           ) : (
-            <Text style={styles.emptyText}>No weeks in this period.</Text>
+            <Text style={styles.planSummary}>
+              {weeks.length
+                ? `${weeks.filter((week) => week.met).length} of ${weeks.length} weekly targets reached.`
+                : 'No weeks in this period.'}
+            </Text>
           )}
         </SurfaceCard>
       </View>
@@ -581,6 +611,29 @@ const styles = StyleSheet.create({
   },
   planList: {
     gap: spacing.md,
+  },
+  planToggle: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radii.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 46,
+    paddingHorizontal: spacing.md,
+  },
+  planToggleDisabled: {
+    opacity: 0.65,
+  },
+  planTogglePressed: {
+    backgroundColor: colors.border,
+  },
+  planToggleText: {
+    ...typography.label,
+    color: colors.accent,
+  },
+  planSummary: {
+    ...typography.body,
+    color: colors.textMuted,
   },
   planRow: {
     gap: spacing.xs,

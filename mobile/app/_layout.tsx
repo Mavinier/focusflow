@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { StyleSheet, Text, View } from 'react-native'
+import { Image, StyleSheet, Text, View } from 'react-native'
 
 import { colors } from '../src/theme/tokens'
 import { initializeDatabase } from '../src/db/database'
@@ -32,7 +32,15 @@ export default function RootLayout() {
     )
   }
 
-  if (!databaseReady) return null
+  if (!databaseReady) {
+    return (
+      <View style={styles.loadingScreen}>
+        <Image source={require('../assets/icon.png')} style={styles.loadingIcon} />
+        <Text style={styles.loadingBrand}>focusflow</Text>
+        <Text style={styles.loadingTagline}>Your focus, in motion.</Text>
+      </View>
+    )
+  }
 
   return (
     <>
@@ -72,5 +80,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 12,
     textAlign: 'center',
+  },
+  loadingScreen: {
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    flex: 1,
+    justifyContent: 'center',
+    padding: 24,
+  },
+  loadingIcon: {
+    height: 112,
+    marginBottom: 24,
+    width: 112,
+  },
+  loadingBrand: {
+    color: colors.text,
+    fontSize: 30,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
+  loadingTagline: {
+    color: colors.textMuted,
+    fontSize: 14,
+    marginTop: 8,
   },
 })
