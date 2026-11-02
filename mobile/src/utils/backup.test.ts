@@ -27,9 +27,18 @@ const validBackup = {
     durationMinutes: 60,
     note: 'Chapter one',
   }],
-  dailyNotes: [],
+  dailyNotes: [{ id: 1, activityDate: '2026-11-02', note: 'Keep going.' }],
   weeklyGoals: [{ id: 1, weekStart: '2026-11-02', targetMinutes: 600 }],
-  notifications: [],
+  notifications: [{
+    id: 1,
+    eventKey: 'goal:2026-11-02',
+    type: 'goal',
+    title: 'Weekly goal',
+    message: 'Keep going.',
+    href: '/goals',
+    createdAt: '2026-11-02T12:00:00.000Z',
+    readAt: null,
+  }],
 }
 
 test('parses a web-compatible backup and fills optional notifications', () => {
@@ -38,7 +47,11 @@ test('parses a web-compatible backup and fills optional notifications', () => {
     notifications: undefined,
   })
 
+  assert.equal(backup.settings?.displayName, 'FocusFlow')
   assert.equal(backup.activities[0]?.name, 'Reading')
+  assert.equal(backup.focusSessions[0]?.durationMinutes, 60)
+  assert.equal(backup.weeklyGoals[0]?.targetMinutes, 600)
+  assert.equal(backup.dailyNotes[0]?.note, 'Keep going.')
   assert.equal(backup.notifications.length, 0)
 })
 
