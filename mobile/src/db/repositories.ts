@@ -20,6 +20,7 @@ import {
   type Notification,
   type WeeklyGoal,
 } from './schema'
+import type { FocusSessionRow } from '../types/analytics'
 
 type ActivityChanges = Partial<Omit<NewActivity, 'id'>>
 type FocusSessionChanges = Partial<Omit<NewFocusSession, 'id'>>
@@ -37,6 +38,7 @@ export interface ActivityRepository {
 
 export interface FocusSessionRepository {
   list(): FocusSession[]
+  listWithActivities(): FocusSessionRow[]
   listByDate(activityDate: string): FocusSession[]
   listBetween(from: string, to: string): FocusSession[]
   getById(id: number): FocusSession | undefined
@@ -105,6 +107,32 @@ export function createRepositories(database: AppDatabase): MobileRepositories {
     },
     focusSessions: {
       list: () => database.select().from(focusSessions).orderBy(desc(focusSessions.activityDate)).all(),
+      listWithActivities: () => {
+        const activityMap = new Map(
+          database.select().from(activities).all().map((activity) => [activity.id, activity]),
+        )
+
+        return database
+          .select()
+          .from(focusSessions)
+          .orderBy(desc(focusSessions.activityDate), desc(focusSessions.id))
+          .all()
+          .flatMap((session) => {
+            const activity = activityMap.get(session.activityId)
+            if (!activity) return []
+
+            return [{
+              activityDate: session.activityDate,
+              activityName: activity.name,
+              color: activity.color,
+              icon: activity.icon as FocusSessionRow['icon'],
+              durationMinutes: session.durationMinutes,
+              startedAt: session.startedAt,
+              endedAt: session.endedAt,
+              note: session.note,
+            }]
+          })
+      },
       listByDate: (activityDate) =>
         database
           .select()

@@ -1,48 +1,96 @@
-import { router } from 'expo-router'
+import { useFocusEffect, router } from 'expo-router'
+import { useCallback, useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 
+import { ActivityHeatmap } from '../../src/components/ActivityHeatmap'
 import { AppScreen } from '../../src/components/AppScreen'
+import { DayDetail } from '../../src/components/DayDetail'
 import { SurfaceCard } from '../../src/components/SurfaceCard'
+import { repositories } from '../../src/db/repositories'
 import { colors, radii, spacing, typography } from '../../src/theme/tokens'
-
-const activityPills = [
-  { label: 'Java', color: colors.activity.java },
-  { label: 'SQL', color: colors.activity.sql },
-  { label: 'Reading', color: colors.activity.reading },
-]
-
-const heatmapCells = Array.from({ length: 35 }, (_, index) => {
-  if (index < 3) return colors.activity.java
-  if (index < 7) return colors.surfaceRaised
-  if (index === 16) return colors.activity.sql
-  if (index === 24) return colors.activity.reading
-  return colors.border
-})
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.metric}>
-      <Text style={styles.metricValue}>{value}</Text>
-      <Text style={styles.metricLabel}>{label}</Text>
-    </View>
-  )
-}
+import type { DayData } from '../../src/types/tracker'
+import {
+  buildFocusMix,
+  calculateActiveStreak,
+  totalMinutesThrough,
+} from '../../src/utils/analytics'
+import { sessionsToDayData } from '../../src/utils/insights'
+import {
+  formatDayHeading,
+  formatDuration,
+  getTodayDateKey,
+  getWeekStart,
+} from '../../src/utils/tracker'
 
 export default function OverviewScreen() {
-  const dateLabel = new Intl.DateTimeFormat('en', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date())
+  const today = getTodayDateKey()
+  const currentYear = Number(today.slice(0, 4))
+  const [dayData, setDayData] = useState<DayData>({})
+  const [selectedDate, setSelectedDate] = useState(today)
+  const [selectedYear, setSelectedYear] = useState(currentYear)
+  const [useRollingHeatmap, setUseRollingHeatmap] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useFocusEffect(
+    useCallback(() => {
+      try {
+        setIsLoading(true)
+        const sessions = repositories.focusSessions.listWithActivities()
+        const notes = repositories.dailyNotes.listBetween('0000-01-01', '9999-12-31')
+        setDayData(sessionsToDayData(sessions, notes))
+        setError(null)
+      } catch (loadError: unknown) {
+        setError(loadError instanceof Error ? loadError.message : 'Unable to load activity data.')
+      } finally {
+        setIsLoading(false)
+      }
+    }, []),
+  )
+
+  const availableYears = useMemo(() => {
+    const years = Object.keys(dayData).map((date) => Number(date.slice(0, 4)))
+    return Array.from(new Set([currentYear, selectedYear, ...years]))
+      .sort((first, second) => second - first)
+  }, [currentYear, dayData, selectedYear])
+  const periodEnd = selectedYear === currentYear ? today : `${selectedYear}-12-31`
+  const visibleDayData = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(dayData).filter(
+          ([date]) => date >= `${selectedYear}-01-01` && date <= periodEnd,
+        ),
+      ) as DayData,
+    [dayData, periodEnd, selectedYear],
+  )
+  const focusMix = useMemo(() => buildFocusMix(visibleDayData), [visibleDayData])
+  const totalTrackedMinutes = totalMinutesThrough(visibleDayData, periodEnd)
+  const activeDaysCount = Object.values(visibleDayData).filter(
+    (record) => record.totalMinutes > 0,
+  ).length
+  const currentStreak = calculateActiveStreak(dayData)
+  const weekStart = getWeekStart(today)
+  const weekMinutes = Object.values(dayData)
+    .filter((record) => record.date >= weekStart && record.date <= today)
+    .reduce((total, record) => total + record.totalMinutes, 0)
+  const selectedRecord = dayData[selectedDate]
+
+  function handleYearChange(year: number) {
+    setSelectedYear(year)
+    setUseRollingHeatmap(false)
+    setSelectedDate(year === currentYear ? today : `${year}-12-31`)
+  }
 
   return (
     <AppScreen
-      subtitle={`${dateLabel} · Your local study space`}
-      title="Good morning"
+      subtitle={`${formatDayHeading(selectedDate)} · Your local study space`}
+      title="Your focus, in motion."
     >
+      {isLoading ? <Text style={styles.statusText}>Loading your local activity…</Text> : null}
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
       <Pressable
         accessibilityRole="button"
-        onPress={() => router.push('/log-activity')}
+        onPress={() => router.push({ pathname: '/log-activity', params: { date: selectedDate } })}
         style={({ pressed }) => [
           styles.primaryButton,
           pressed && styles.primaryButtonPressed,
@@ -53,52 +101,76 @@ export default function OverviewScreen() {
       </Pressable>
 
       <View style={styles.metricsRow}>
-        <Metric label="This week" value="0m" />
-        <Metric label="Active days" value="0" />
-        <Metric label="Current streak" value="0d" />
+        <Metric label="This week" value={formatDuration(weekMinutes)} />
+        <Metric label="Active days" value={String(activeDaysCount)} />
+        <Metric label="Current streak" value={`${currentStreak}d`} />
       </View>
 
-      <SurfaceCard
-        description="Your activity history will appear here as you log sessions."
-        title="Activity map"
-      >
-        <View accessibilityLabel="Empty activity heatmap" style={styles.heatmap}>
-          {heatmapCells.map((color, index) => (
-            <View key={`cell-${index}`} style={[styles.heatmapCell, { backgroundColor: color }]} />
-          ))}
-        </View>
-        <View style={styles.heatmapLegend}>
-          <Text style={styles.legendText}>Less</Text>
-          {[colors.border, colors.surfaceRaised, colors.activity.sql, colors.activity.java].map(
-            (color, index) => (
-              <View key={`legend-${index}`} style={[styles.legendCell, { backgroundColor: color }]} />
-            ),
-          )}
-          <Text style={styles.legendText}>More</Text>
-        </View>
-      </SurfaceCard>
+      <ActivityHeatmap
+        availableYears={availableYears}
+        dayData={useRollingHeatmap && selectedYear === currentYear ? dayData : visibleDayData}
+        onModeChange={setUseRollingHeatmap}
+        onSelectDate={setSelectedDate}
+        onYearChange={handleYearChange}
+        selectedDate={selectedDate}
+        useRollingWindow={useRollingHeatmap}
+        year={selectedYear}
+      />
+
+      <DayDetail
+        onAddEntry={() => router.push({ pathname: '/log-activity', params: { date: selectedDate } })}
+        selectedDate={selectedDate}
+        selectedRecord={selectedRecord}
+      />
 
       <SurfaceCard
-        description="Focus areas will be summarized after your first session."
+        description={
+          totalTrackedMinutes
+            ? `${formatDuration(totalTrackedMinutes)} tracked in ${selectedYear}.`
+            : 'Focus areas will be summarized after your first session.'
+        }
         title="Focus mix"
       >
-        <View style={styles.pillRow}>
-          {activityPills.map((activity) => (
-            <View key={activity.label} style={styles.activityPill}>
-              <View style={[styles.pillDot, { backgroundColor: activity.color }]} />
-              <Text style={styles.pillText}>{activity.label}</Text>
+        {focusMix.length ? (
+          focusMix.slice(0, 5).map((activity) => (
+            <View key={activity.name} style={styles.mixRow}>
+              <View style={styles.mixLabel}>
+                <View style={[styles.pillDot, { backgroundColor: activity.color }]} />
+                <Text style={styles.pillText}>{activity.name}</Text>
+              </View>
+              <Text style={styles.mixValue}>
+                {activity.percentage}% · {formatDuration(activity.durationMinutes)}
+              </Text>
             </View>
-          ))}
-        </View>
-        <View style={styles.progressTrack}>
-          <View style={styles.progressFill} />
-        </View>
+          ))
+        ) : (
+          <Text style={styles.emptyText}>Log a session to see where your focus is going.</Text>
+        )}
       </SurfaceCard>
     </AppScreen>
   )
 }
 
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.metric}>
+      <Text style={styles.metricValue}>{value}</Text>
+      <Text style={styles.metricLabel}>{label}</Text>
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
+  statusText: {
+    ...typography.label,
+    color: colors.textMuted,
+    marginBottom: spacing.md,
+  },
+  errorText: {
+    ...typography.label,
+    color: colors.danger,
+    marginBottom: spacing.md,
+  },
   primaryButton: {
     alignItems: 'center',
     backgroundColor: colors.accent,
@@ -144,46 +216,16 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: spacing.xs,
   },
-  heatmap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-  },
-  heatmapCell: {
-    borderRadius: 3,
-    height: 17,
-    width: 17,
-  },
-  heatmapLegend: {
+  mixRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: spacing.xs,
-    justifyContent: 'flex-end',
-    marginTop: spacing.md,
+    justifyContent: 'space-between',
   },
-  legendCell: {
-    borderRadius: 3,
-    height: 12,
-    width: 12,
-  },
-  legendText: {
-    ...typography.label,
-    color: colors.textSubtle,
-    fontSize: 10,
-  },
-  pillRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  activityPill: {
+  mixLabel: {
     alignItems: 'center',
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radii.pill,
+    flex: 1,
     flexDirection: 'row',
     gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
   },
   pillDot: {
     borderRadius: radii.pill,
@@ -194,16 +236,13 @@ const styles = StyleSheet.create({
     ...typography.label,
     color: colors.text,
   },
-  progressTrack: {
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radii.pill,
-    height: 8,
-    overflow: 'hidden',
+  mixValue: {
+    ...typography.label,
+    color: colors.textMuted,
+    fontSize: 11,
   },
-  progressFill: {
-    backgroundColor: colors.accent,
-    borderRadius: radii.pill,
-    height: '100%',
-    width: '0%',
+  emptyText: {
+    ...typography.body,
+    color: colors.textMuted,
   },
 })
