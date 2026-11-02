@@ -412,7 +412,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: spacing.lg,
   },
   periodToggle: {
     backgroundColor: colors.surface,
@@ -449,18 +448,15 @@ const styles = StyleSheet.create({
   statusText: {
     ...typography.label,
     color: colors.textMuted,
-    marginBottom: spacing.md,
   },
   errorText: {
     ...typography.label,
     color: colors.danger,
-    marginBottom: spacing.md,
   },
   summaryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
-    marginBottom: spacing.lg,
   },
   summaryStat: {
     backgroundColor: colors.surface,
@@ -488,7 +484,6 @@ const styles = StyleSheet.create({
   },
   twoColumn: {
     gap: spacing.lg,
-    marginTop: spacing.lg,
   },
   barList: {
     gap: spacing.md,

@@ -233,7 +233,18 @@ app.patch('/api/activities/:id', (request, response) => {
   }
 
   if (body.icon !== undefined) {
-    const validIcons: ActivityIconName[] = ['code', 'database', 'book', 'work', 'notes']
+    const validIcons: ActivityIconName[] = [
+      'code',
+      'database',
+      'book',
+      'work',
+      'notes',
+      'fitness',
+      'design',
+      'language',
+      'music',
+      'personal',
+    ]
     if (typeof body.icon !== 'string' || !validIcons.includes(body.icon as ActivityIconName)) {
       response.status(400).json({ error: 'icon is not supported' })
       return

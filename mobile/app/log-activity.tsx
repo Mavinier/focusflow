@@ -291,7 +291,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     borderRadius: radii.md,
     justifyContent: 'center',
-    marginTop: spacing.lg,
     minHeight: 52,
   },
   primaryButtonPressed: {
@@ -305,7 +304,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: 44,
     justifyContent: 'center',
-    marginTop: spacing.sm,
   },
   cancelButtonText: {
     ...typography.label,

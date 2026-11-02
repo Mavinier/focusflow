@@ -357,6 +357,11 @@ function ActivitySettingsRow({
           <option value="book">Book</option>
           <option value="work">Work</option>
           <option value="notes">Notes</option>
+          <option value="fitness">Fitness</option>
+          <option value="design">Design</option>
+          <option value="language">Language</option>
+          <option value="music">Music</option>
+          <option value="personal">Personal</option>
         </select>
         <ChevronDown size={12} />
       </div>

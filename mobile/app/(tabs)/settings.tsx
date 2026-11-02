@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from 'expo-router'
 import { useCallback, useState } from 'react'
 import * as DocumentPicker from 'expo-document-picker'
@@ -56,6 +57,11 @@ const iconOptions: { label: string; value: ActivityIconName }[] = [
   { label: 'Book', value: 'book' },
   { label: 'Work', value: 'work' },
   { label: 'Notes', value: 'notes' },
+  { label: 'Fitness', value: 'fitness' },
+  { label: 'Design', value: 'design' },
+  { label: 'Language', value: 'language' },
+  { label: 'Music', value: 'music' },
+  { label: 'Personal', value: 'personal' },
 ]
 
 function ActivityAreaRow({
@@ -151,6 +157,7 @@ export default function SettingsScreen() {
   const [scheduledReminderCount, setScheduledReminderCount] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
   const [isDataBusy, setIsDataBusy] = useState(false)
+  const [isActivityAreasExpanded, setIsActivityAreasExpanded] = useState(true)
 
   useFocusEffect(
     useCallback(() => {
@@ -448,33 +455,56 @@ export default function SettingsScreen() {
         description="Rename areas, change their icon or color, and add new local areas for future sessions."
         title="Activity areas"
       >
-        <View style={styles.activityList}>
-          {activities.map((activity) => (
-            <ActivityAreaRow
-              activity={activity}
-              key={activity.id}
-              onChange={updateActivity}
-              onSave={saveActivity}
-            />
-          ))}
-        </View>
-        <View style={styles.divider} />
-        <Text style={styles.sectionLabel}>Add an activity area</Text>
-        <TextInput
-          onChangeText={setNewAreaName}
-          placeholder="e.g. Algorithms"
-          placeholderTextColor={colors.textSubtle}
-          style={styles.input}
-          value={newAreaName}
-        />
-        <ColorChoices selectedColor={newAreaColor} onSelect={setNewAreaColor} />
         <Pressable
           accessibilityRole="button"
-          onPress={addActivity}
-          style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
+          accessibilityState={{ expanded: isActivityAreasExpanded }}
+          onPress={() => setIsActivityAreasExpanded((expanded) => !expanded)}
+          style={({ pressed }) => [styles.activityAreasToggle, pressed && styles.pressed]}
         >
-          <Text style={styles.secondaryButtonText}>Add activity area</Text>
+          <Text style={styles.activityAreasToggleText}>
+            {isActivityAreasExpanded ? 'Hide activity areas' : `Show ${activities.length} areas`}
+          </Text>
+          <Ionicons
+            color={colors.accent}
+            name={isActivityAreasExpanded ? 'chevron-up' : 'chevron-down'}
+            size={18}
+          />
         </Pressable>
+        {isActivityAreasExpanded ? (
+          <>
+            <View style={styles.activityList}>
+              {activities.map((activity) => (
+                <ActivityAreaRow
+                  activity={activity}
+                  key={activity.id}
+                  onChange={updateActivity}
+                  onSave={saveActivity}
+                />
+              ))}
+            </View>
+            <View style={styles.divider} />
+            <Text style={styles.sectionLabel}>Add an activity area</Text>
+            <TextInput
+              onChangeText={setNewAreaName}
+              placeholder="e.g. Algorithms"
+              placeholderTextColor={colors.textSubtle}
+              style={styles.input}
+              value={newAreaName}
+            />
+            <ColorChoices selectedColor={newAreaColor} onSelect={setNewAreaColor} />
+            <Pressable
+              accessibilityRole="button"
+              onPress={addActivity}
+              style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
+            >
+              <Text style={styles.secondaryButtonText}>Add activity area</Text>
+            </Pressable>
+          </>
+        ) : (
+          <Text style={styles.activityAreasSummary}>
+            {activities.length} area{activities.length === 1 ? '' : 's'} configured.
+          </Text>
+        )}
       </SurfaceCard>
 
       <SurfaceCard title="Notifications">
@@ -599,12 +629,10 @@ const styles = StyleSheet.create({
   messageText: {
     ...typography.label,
     color: colors.success,
-    marginBottom: spacing.md,
   },
   errorText: {
     ...typography.label,
     color: colors.danger,
-    marginBottom: spacing.md,
   },
   body: {
     ...typography.body,
@@ -632,6 +660,23 @@ const styles = StyleSheet.create({
   activityList: {
     gap: spacing.xl,
   },
+  activityAreasToggle: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radii.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 46,
+    paddingHorizontal: spacing.md,
+  },
+  activityAreasToggleText: {
+    ...typography.label,
+    color: colors.accent,
+  },
+  activityAreasSummary: {
+    ...typography.body,
+    color: colors.textMuted,
+  },
   areaRow: {
     gap: spacing.md,
   },
@@ -655,6 +700,8 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 42,
     paddingHorizontal: spacing.md,
+    textAlign: 'left',
+    textAlignVertical: 'center',
   },
   choiceRow: {
     flexDirection: 'row',

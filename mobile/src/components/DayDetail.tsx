@@ -23,6 +23,11 @@ const iconNames: Record<ActivityIconName, keyof typeof Ionicons.glyphMap> = {
   book: 'book-outline',
   work: 'briefcase-outline',
   notes: 'document-text-outline',
+  fitness: 'fitness-outline',
+  design: 'color-palette-outline',
+  language: 'language-outline',
+  music: 'musical-notes-outline',
+  personal: 'person-outline',
 }
 
 function getDayMessage(totalMinutes: number, note?: string) {

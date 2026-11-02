@@ -164,19 +164,16 @@ const styles = StyleSheet.create({
   statusText: {
     ...typography.label,
     color: colors.textMuted,
-    marginBottom: spacing.md,
   },
   errorText: {
     ...typography.label,
     color: colors.danger,
-    marginBottom: spacing.md,
   },
   primaryButton: {
     alignItems: 'center',
     backgroundColor: colors.accent,
     borderRadius: radii.lg,
     justifyContent: 'center',
-    marginBottom: spacing.lg,
     minHeight: 68,
     padding: spacing.md,
   },
@@ -197,7 +194,6 @@ const styles = StyleSheet.create({
   metricsRow: {
     flexDirection: 'row',
     gap: spacing.sm,
-    marginBottom: spacing.lg,
   },
   metric: {
     backgroundColor: colors.surface,

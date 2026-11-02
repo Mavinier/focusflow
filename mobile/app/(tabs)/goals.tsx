@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
@@ -25,6 +26,7 @@ export default function GoalsScreen() {
   const [defaultTarget, setDefaultTarget] = useState(600)
   const [targetInput, setTargetInput] = useState('600')
   const [isEditing, setIsEditing] = useState(false)
+  const [isHistoryExpanded, setIsHistoryExpanded] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -155,9 +157,30 @@ export default function GoalsScreen() {
       ) : null}
 
       <SurfaceCard description={`${weeks.length} weeks in the selected year.`} title="Planned vs actual">
-        <View style={styles.historyList}>
-          {[...weeks].reverse().map((week) => <GoalWeekRow key={week.weekStart} week={week} />)}
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: isHistoryExpanded }}
+          onPress={() => setIsHistoryExpanded((expanded) => !expanded)}
+          style={({ pressed }) => [styles.historyToggle, pressed && styles.pressed]}
+        >
+          <Text style={styles.historyToggleText}>
+            {isHistoryExpanded ? 'Hide weekly history' : `Show ${weeks.length} weeks`}
+          </Text>
+          <Ionicons
+            color={colors.accent}
+            name={isHistoryExpanded ? 'chevron-up' : 'chevron-down'}
+            size={18}
+          />
+        </Pressable>
+        {isHistoryExpanded ? (
+          <View style={styles.historyList}>
+            {[...weeks].reverse().map((week) => <GoalWeekRow key={week.weekStart} week={week} />)}
+          </View>
+        ) : (
+          <Text style={styles.historySummary}>
+            {completedWeeks} of {weeks.length} weekly targets reached.
+          </Text>
+        )}
       </SurfaceCard>
 
       <SurfaceCard title="Why goals matter">
@@ -208,23 +231,19 @@ const styles = StyleSheet.create({
   statusText: {
     ...typography.label,
     color: colors.textMuted,
-    marginBottom: spacing.md,
   },
   messageText: {
     ...typography.label,
     color: colors.success,
-    marginBottom: spacing.md,
   },
   errorText: {
     ...typography.label,
     color: colors.danger,
-    marginBottom: spacing.md,
   },
   summaryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
-    marginBottom: spacing.lg,
   },
   summaryStat: {
     backgroundColor: colors.surface,
@@ -289,7 +308,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     borderWidth: 1,
     justifyContent: 'center',
-    marginVertical: spacing.lg,
     minHeight: 50,
   },
   pressed: {
@@ -328,6 +346,23 @@ const styles = StyleSheet.create({
   },
   historyList: {
     gap: spacing.lg,
+  },
+  historyToggle: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radii.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 46,
+    paddingHorizontal: spacing.md,
+  },
+  historyToggleText: {
+    ...typography.label,
+    color: colors.accent,
+  },
+  historySummary: {
+    ...typography.body,
+    color: colors.textMuted,
   },
   weekRow: {
     gap: spacing.xs,

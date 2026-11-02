@@ -33,12 +33,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
+    gap: spacing.lg,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,
   },
   heading: {
     gap: spacing.xs,
-    marginBottom: spacing.xl,
   },
   title: {
     ...typography.display,
