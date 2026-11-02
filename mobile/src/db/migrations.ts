@@ -12,6 +12,12 @@ const migrations = {
         tag: '0000_bumpy_ezekiel',
         breakpoints: true,
       },
+      {
+        idx: 1,
+        when: 1793640663857,
+        tag: '0001_archive_activity_areas',
+        breakpoints: true,
+      },
     ],
   },
   migrations: {
@@ -73,6 +79,7 @@ CREATE TABLE \`weekly_goals\` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX \`weekly_goals_week_start_idx\` ON \`weekly_goals\` (\`week_start\`);`,
+    m0001: `ALTER TABLE \`activities\` ADD \`is_active\` integer DEFAULT 1 NOT NULL;`,
   },
 }
 

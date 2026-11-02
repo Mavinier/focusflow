@@ -30,7 +30,7 @@ function SettingsPage() {
     let cancelled = false
     setIsLoading(true)
 
-    Promise.all([fetchSettings(), fetchActivities()])
+    Promise.all([fetchSettings(), fetchActivities(true)])
       .then(([loadedSettings, loadedActivities]) => {
         if (cancelled) return
         setSettings(loadedSettings)
@@ -117,6 +117,31 @@ function SettingsPage() {
         current.map((item) => item.id === updatedActivity.id ? updatedActivity : item),
       )
       setSavedMessage(`${updatedActivity.name} updated.`)
+    } catch (requestError: unknown) {
+      setActivityError(
+        requestError instanceof Error ? requestError.message : 'Unable to update activity.',
+      )
+    } finally {
+      setSavingActivityId(null)
+    }
+  }
+
+  async function handleActivityToggle(activity: ActivityOption) {
+    setSavingActivityId(activity.id)
+    setActivityError(null)
+
+    try {
+      const updatedActivity = await updateActivity(activity.id, {
+        isActive: !activity.isActive,
+      })
+      setActivities((current) =>
+        current.map((item) => item.id === updatedActivity.id ? updatedActivity : item),
+      )
+      setSavedMessage(
+        updatedActivity.isActive
+          ? `${updatedActivity.name} restored for new sessions.`
+          : `${updatedActivity.name} archived. Existing sessions are preserved.`,
+      )
     } catch (requestError: unknown) {
       setActivityError(
         requestError instanceof Error ? requestError.message : 'Unable to update activity.',
@@ -235,6 +260,7 @@ function SettingsPage() {
                     key={activity.id}
                     onChange={updateActivityDraft}
                     onSave={handleActivitySave}
+                  onToggleActive={handleActivityToggle}
                   />
                 ))}
               </div>
@@ -329,6 +355,7 @@ type ActivitySettingsRowProps = {
     value: string,
   ) => void
   onSave: (activity: ActivityOption) => void
+  onToggleActive: (activity: ActivityOption) => void
 }
 
 function ActivitySettingsRow({
@@ -336,9 +363,10 @@ function ActivitySettingsRow({
   isSaving,
   onChange,
   onSave,
+  onToggleActive,
 }: ActivitySettingsRowProps) {
   return (
-    <div className="activity-settings-row">
+    <div className={`activity-settings-row${activity.isActive ? '' : ' archived'}`}>
       <span className="activity-color-preview" style={{ backgroundColor: activity.color }} />
       <input
         aria-label={`${activity.name} name`}
@@ -362,6 +390,7 @@ function ActivitySettingsRow({
           <option value="language">Language</option>
           <option value="music">Music</option>
           <option value="personal">Personal</option>
+          <option value="study">Study</option>
         </select>
         <ChevronDown size={12} />
       </div>
@@ -385,6 +414,15 @@ function ActivitySettingsRow({
         onClick={() => onSave(activity)}
       >
         {isSaving ? <LoaderCircle className="spin" size={14} /> : <Save size={14} />}
+      </button>
+      <button
+        aria-label={`${activity.isActive ? 'Archive' : 'Restore'} ${activity.name}`}
+        className="activity-archive-button"
+        disabled={isSaving}
+        type="button"
+        onClick={() => onToggleActive(activity)}
+      >
+        {activity.isActive ? 'Archive' : 'Restore'}
       </button>
     </div>
   )

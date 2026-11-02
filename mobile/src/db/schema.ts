@@ -13,6 +13,7 @@ export const activities = sqliteTable(
     name: text('name').notNull(),
     color: text('color').notNull(),
     icon: text('icon').notNull(),
+    isActive: integer('is_active').notNull().default(1),
   },
   (table) => ({
     nameIndex: uniqueIndex('activities_name_idx').on(table.name),

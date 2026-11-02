@@ -5,6 +5,7 @@ import {
   Code2,
   Database,
   Dumbbell,
+  GraduationCap,
   Languages,
   Music2,
   NotebookPen,
@@ -48,6 +49,8 @@ function getActivityIcon(icon: ActivityIconName): ReactNode {
       return <Music2 {...iconProps} />
     case 'personal':
       return <UserRound {...iconProps} />
+    case 'study':
+      return <GraduationCap {...iconProps} />
     default:
       return <NotebookPen {...iconProps} />
   }

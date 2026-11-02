@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, type ComponentRef } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
 import type { DayData } from '../types/tracker'
@@ -44,9 +44,18 @@ export function ActivityHeatmap({
     () => buildHeatmap(dayData, year, today, useRollingWindow),
     [dayData, today, useRollingWindow, year],
   )
+  const chartScrollRef = useRef<ComponentRef<typeof ScrollView>>(null)
   const yearIndex = availableYears.indexOf(year)
   const previousYear = availableYears[yearIndex + 1]
   const nextYear = availableYears[yearIndex - 1]
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      chartScrollRef.current?.scrollToEnd({ animated: false })
+    })
+
+    return () => cancelAnimationFrame(frame)
+  }, [model.weeks.length, useRollingWindow, year])
 
   return (
     <SurfaceCard title="Activity map">
@@ -100,6 +109,7 @@ export function ActivityHeatmap({
         </View>
         <ScrollView
           horizontal
+          ref={chartScrollRef}
           showsHorizontalScrollIndicator={false}
           style={styles.chartScroll}
         >

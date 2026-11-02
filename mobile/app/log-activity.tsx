@@ -24,7 +24,7 @@ import {
 
 export default function LogActivityScreen() {
   const params = useLocalSearchParams<{ date?: string }>()
-  const [activities] = useState(() => repositories.activities.list())
+  const [activities] = useState(() => repositories.activities.listActive())
   const [activityDate, setActivityDate] = useState(
     isDateKey(params.date) ? params.date : getTodayDateKey(),
   )

@@ -11,6 +11,7 @@ export type ActivityIconName =
   | 'language'
   | 'music'
   | 'personal'
+  | 'study'
 
 export type Activity = {
   name: string

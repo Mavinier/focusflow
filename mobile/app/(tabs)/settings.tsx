@@ -62,12 +62,14 @@ const iconOptions: { label: string; value: ActivityIconName }[] = [
   { label: 'Language', value: 'language' },
   { label: 'Music', value: 'music' },
   { label: 'Personal', value: 'personal' },
+  { label: 'Study', value: 'study' },
 ]
 
 function ActivityAreaRow({
   activity,
   onChange,
   onSave,
+  onToggleActive,
 }: {
   activity: Activity
   onChange: (
@@ -76,9 +78,10 @@ function ActivityAreaRow({
     value: string,
   ) => void
   onSave: (activity: Activity) => void
+  onToggleActive: (activity: Activity) => void
 }) {
   return (
-    <View style={styles.areaRow}>
+    <View style={[styles.areaRow, !activity.isActive && styles.archivedAreaRow]}>
       <View style={styles.areaHeading}>
         <View style={[styles.areaDot, { backgroundColor: activity.color }]} />
         <TextInput
@@ -108,14 +111,26 @@ function ActivityAreaRow({
         onSelect={(color) => onChange(activity.id, 'color', color)}
         selectedColor={activity.color}
       />
-      <Pressable
-        accessibilityLabel={`Save ${activity.name}`}
-        accessibilityRole="button"
-        onPress={() => onSave(activity)}
-        style={styles.saveAreaButton}
-      >
-        <Text style={styles.saveAreaText}>Save area</Text>
-      </Pressable>
+      <View style={styles.areaActions}>
+        <Pressable
+          accessibilityLabel={`Save ${activity.name}`}
+          accessibilityRole="button"
+          onPress={() => onSave(activity)}
+          style={styles.saveAreaButton}
+        >
+          <Text style={styles.saveAreaText}>Save area</Text>
+        </Pressable>
+        <Pressable
+          accessibilityLabel={`${activity.isActive ? 'Archive' : 'Restore'} ${activity.name}`}
+          accessibilityRole="button"
+          onPress={() => onToggleActive(activity)}
+          style={styles.archiveAreaButton}
+        >
+          <Text style={styles.archiveAreaText}>
+            {activity.isActive ? 'Archive area' : 'Restore area'}
+          </Text>
+        </Pressable>
+      </View>
     </View>
   )
 }
@@ -351,6 +366,24 @@ export default function SettingsScreen() {
     }
   }
 
+  function toggleActivity(activity: Activity) {
+    try {
+      const updated = repositories.activities.update(activity.id, {
+        isActive: activity.isActive ? 0 : 1,
+      })
+      if (!updated) throw new Error('Activity area was not found.')
+      setActivities((current) => current.map((item) => item.id === updated.id ? updated : item))
+      setMessage(
+        updated.isActive
+          ? `${updated.name} restored for new sessions.`
+          : `${updated.name} archived. Existing sessions are preserved.`,
+      )
+      setError(null)
+    } catch (toggleError: unknown) {
+      setError(toggleError instanceof Error ? toggleError.message : 'Unable to update activity area.')
+    }
+  }
+
   function addActivity() {
     const name = newAreaName.trim()
     if (!name) {
@@ -479,6 +512,7 @@ export default function SettingsScreen() {
                   key={activity.id}
                   onChange={updateActivity}
                   onSave={saveActivity}
+                  onToggleActive={toggleActivity}
                 />
               ))}
             </View>
@@ -680,6 +714,14 @@ const styles = StyleSheet.create({
   areaRow: {
     gap: spacing.md,
   },
+  archivedAreaRow: {
+    opacity: 0.58,
+  },
+  areaActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
   areaHeading: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -752,6 +794,20 @@ const styles = StyleSheet.create({
   saveAreaText: {
     ...typography.label,
     color: colors.accent,
+  },
+  archiveAreaButton: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    borderColor: colors.border,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  archiveAreaText: {
+    ...typography.label,
+    color: colors.warning,
   },
   divider: {
     backgroundColor: colors.border,

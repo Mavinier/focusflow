@@ -10,12 +10,14 @@ export type ActivityOption = {
   name: string
   color: string
   icon: ActivityIconName
+  isActive: boolean
 }
 
 export type UpdateActivityInput = {
   name?: string
   color?: string
   icon?: ActivityIconName
+  isActive?: boolean
 }
 
 export type AppSettings = {
@@ -113,8 +115,9 @@ export async function fetchAvailableYears(): Promise<number[]> {
   return data.years
 }
 
-export async function fetchActivities(): Promise<ActivityOption[]> {
-  const response = await fetch('/api/activities')
+export async function fetchActivities(includeArchived = false): Promise<ActivityOption[]> {
+  const query = includeArchived ? '?includeArchived=true' : ''
+  const response = await fetch(`/api/activities${query}`)
 
   if (!response.ok) {
     throw new Error('Unable to load activities.')

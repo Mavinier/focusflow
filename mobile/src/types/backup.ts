@@ -81,6 +81,9 @@ function parseActivity(value: unknown, index: number): Activity {
     name: nonEmptyString(value.name, `activities[${index}].name`),
     color: nonEmptyString(value.color, `activities[${index}].color`),
     icon: nonEmptyString(value.icon, `activities[${index}].icon`) as Activity['icon'],
+    isActive: value.isActive === undefined
+      ? 1
+      : booleanInteger(value.isActive, `activities[${index}].isActive`),
   }
 }
 

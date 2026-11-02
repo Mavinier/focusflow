@@ -98,6 +98,13 @@ function getNextActivityColor() {
   return ACTIVITY_COLOR_PALETTE[activityCount % ACTIVITY_COLOR_PALETTE.length]
 }
 
+function serializeActivity(activity: typeof activities.$inferSelect) {
+  return {
+    ...activity,
+    isActive: Boolean(activity.isActive),
+  }
+}
+
 app.use(express.json())
 ensureAppSettings()
 
@@ -181,8 +188,10 @@ function isDateKey(value: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(`${value}T12:00:00`).getTime())
 }
 
-app.get('/api/activities', (_request, response) => {
-  response.json(db.select().from(activities).orderBy(asc(activities.name)).all())
+app.get('/api/activities', (request, response) => {
+  const includeArchived = request.query.includeArchived === 'true'
+  const rows = db.select().from(activities).orderBy(asc(activities.name)).all()
+  response.json(rows.filter((activity) => includeArchived || activity.isActive).map(serializeActivity))
 })
 
 app.patch('/api/activities/:id', (request, response) => {
@@ -244,12 +253,21 @@ app.patch('/api/activities/:id', (request, response) => {
       'language',
       'music',
       'personal',
+      'study',
     ]
     if (typeof body.icon !== 'string' || !validIcons.includes(body.icon as ActivityIconName)) {
       response.status(400).json({ error: 'icon is not supported' })
       return
     }
     updates.icon = body.icon
+  }
+
+  if (body.isActive !== undefined) {
+    if (typeof body.isActive !== 'boolean') {
+      response.status(400).json({ error: 'isActive must be a boolean' })
+      return
+    }
+    updates.isActive = body.isActive ? 1 : 0
   }
 
   if (!Object.keys(updates).length) {
@@ -263,7 +281,7 @@ app.patch('/api/activities/:id', (request, response) => {
     .where(eq(activities.id, activityId))
     .returning()
     .get()
-  response.json(updatedActivity)
+  response.json(serializeActivity(updatedActivity))
 })
 
 app.get('/api/settings', (_request, response) => {
@@ -605,6 +623,10 @@ app.post('/api/focus-sessions', (request, response) => {
     .from(activities)
     .where(eq(activities.name, activityName.trim()))
     .get()
+  if (existingActivity && !existingActivity.isActive) {
+    response.status(400).json({ error: 'This activity area is archived. Restore it before logging a session.' })
+    return
+  }
   const activity =
     existingActivity ??
     db

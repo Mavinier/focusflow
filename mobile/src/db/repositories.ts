@@ -31,6 +31,7 @@ type SettingsChanges = Partial<Omit<AppSettings, 'id'>>
 
 export interface ActivityRepository {
   list(): Activity[]
+  listActive(): Activity[]
   getById(id: number): Activity | undefined
   getByName(name: string): Activity | undefined
   create(input: NewActivity): Activity
@@ -97,6 +98,13 @@ export function createRepositories(database: AppDatabase): MobileRepositories {
   return {
     activities: {
       list: () => database.select().from(activities).orderBy(asc(activities.name)).all(),
+      listActive: () =>
+        database
+          .select()
+          .from(activities)
+          .where(eq(activities.isActive, 1))
+          .orderBy(asc(activities.name))
+          .all(),
       getById: (id) =>
         database.select().from(activities).where(eq(activities.id, id)).get(),
       getByName: (name) =>
