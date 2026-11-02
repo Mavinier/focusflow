@@ -262,28 +262,78 @@ export default function SettingsScreen() {
     }
   }
 
+  async function createBackup() {
+    const fileName = `focusflow-backup-${new Date().toISOString().slice(0, 10)}.json`
+    const uri = `${FileSystem.cacheDirectory}${fileName}`
+    await FileSystem.writeAsStringAsync(uri, JSON.stringify(repositories.data.export(), null, 2), {
+      encoding: FileSystem.EncodingType.UTF8,
+    })
+
+    const canShare = await Sharing.isAvailableAsync()
+    if (canShare) {
+      await Sharing.shareAsync(uri, {
+        dialogTitle: 'Export FocusFlow backup',
+        mimeType: 'application/json',
+        UTI: 'public.json',
+      })
+    }
+
+    return { canShare, uri }
+  }
+
   async function exportData() {
     setIsDataBusy(true)
     try {
-      const fileName = `focusflow-backup-${new Date().toISOString().slice(0, 10)}.json`
-      const uri = `${FileSystem.cacheDirectory}${fileName}`
-      await FileSystem.writeAsStringAsync(uri, JSON.stringify(repositories.data.export(), null, 2), {
-        encoding: FileSystem.EncodingType.UTF8,
-      })
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, {
-          dialogTitle: 'Export FocusFlow backup',
-          mimeType: 'application/json',
-          UTI: 'public.json',
-        })
+      const backup = await createBackup()
+      if (backup.canShare) {
         setMessage('Backup ready to save or share.')
       } else {
-        setMessage(`Backup saved at ${uri}`)
+        setMessage(`Backup saved at ${backup.uri}`)
       }
       setError(null)
     } catch (exportError: unknown) {
       setError(exportError instanceof Error ? exportError.message : 'Unable to export your data.')
+    } finally {
+      setIsDataBusy(false)
+    }
+  }
+
+  function requestClearAllData() {
+    Alert.alert(
+      'Clear all activity data?',
+      'This removes sessions, notes, goals, notifications, and custom activity areas. Your preferences stay saved and the default areas are restored.',
+      [
+        { style: 'cancel', text: 'Cancel' },
+        {
+          onPress: () => { void clearAllActivityData(true) },
+          text: 'Save backup first',
+        },
+        {
+          onPress: () => { void clearAllActivityData(false) },
+          style: 'destructive',
+          text: 'Clear without backup',
+        },
+      ],
+    )
+  }
+
+  async function clearAllActivityData(saveBackup: boolean) {
+    setIsDataBusy(true)
+    try {
+      if (saveBackup) await createBackup()
+      repositories.data.resetActivityData()
+      setActivities(repositories.activities.list())
+      const reminderResult = await refreshLocalReminders()
+      setNotificationPermission(reminderResult.permission)
+      setScheduledReminderCount(reminderResult.scheduledCount)
+      setMessage(
+        saveBackup
+          ? 'Backup exported and activity data cleared.'
+          : 'Activity data cleared. Your preferences were kept.',
+      )
+      setError(null)
+    } catch (clearError: unknown) {
+      setError(clearError instanceof Error ? clearError.message : 'Unable to clear activity data.')
     } finally {
       setIsDataBusy(false)
     }
@@ -591,6 +641,18 @@ export default function SettingsScreen() {
             <Text style={styles.secondaryButtonText}>Import JSON backup</Text>
           </Pressable>
         </View>
+        <View style={styles.divider} />
+        <Pressable
+          accessibilityRole="button"
+          disabled={isDataBusy}
+          onPress={requestClearAllData}
+          style={({ pressed }) => [styles.clearDataButton, pressed && styles.clearDataButtonPressed]}
+        >
+          <Text style={styles.clearDataButtonText}>Clear all activity data</Text>
+        </Pressable>
+        <Text style={styles.clearDataHint}>
+          This does not delete your preferences. You will be asked whether to export a backup first.
+        </Text>
       </SurfaceCard>
 
       <View style={styles.version}>
@@ -690,6 +752,25 @@ const styles = StyleSheet.create({
   },
   dataButton: {
     flex: 1,
+  },
+  clearDataButton: {
+    alignItems: 'center',
+    borderColor: colors.danger,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  clearDataButtonPressed: {
+    backgroundColor: 'rgba(255, 158, 170, 0.08)',
+  },
+  clearDataButtonText: {
+    ...typography.label,
+    color: colors.danger,
+  },
+  clearDataHint: {
+    ...typography.label,
+    color: colors.textSubtle,
   },
   activityList: {
     gap: spacing.xl,

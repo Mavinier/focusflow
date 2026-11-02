@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gte, isNull, lte } from 'drizzle-orm'
 
 import { db, type AppDatabase } from './database'
-import { DEFAULT_APP_SETTINGS } from './defaults'
+import { DEFAULT_APP_SETTINGS, seedDefaults } from './defaults'
 import {
   activities,
   appSettings,
@@ -82,6 +82,7 @@ export interface NotificationRepository {
 export interface DataRepository {
   export(): FocusFlowBackup
   replace(input: unknown): void
+  resetActivityData(): void
 }
 
 export interface MobileRepositories {
@@ -319,6 +320,16 @@ export function createRepositories(database: AppDatabase): MobileRepositories {
           if (backup.notifications.length) tx.insert(notifications).values(backup.notifications).run()
           tx.insert(appSettings).values(settings).run()
         })
+      },
+      resetActivityData: () => {
+        database.transaction((tx) => {
+          tx.delete(focusSessions).run()
+          tx.delete(dailyNotes).run()
+          tx.delete(weeklyGoals).run()
+          tx.delete(notifications).run()
+          tx.delete(activities).run()
+        })
+        seedDefaults(database)
       },
     },
   }
