@@ -22,6 +22,13 @@
       "when": 1793626743481,
       "tag": "0002_flaky_gambit",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1793640664387,
+      "tag": "0003_archive_activity_areas",
+      "breakpoints": true
     }
   ]
 }

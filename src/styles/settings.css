@@ -190,9 +190,13 @@
 
 .activity-settings-row {
   display: grid;
-  grid-template-columns: 9px minmax(100px, 1fr) minmax(90px, 0.65fr) minmax(92px, 0.7fr) 30px;
+  grid-template-columns: 9px minmax(100px, 1fr) minmax(90px, 0.65fr) minmax(92px, 0.7fr) 30px 58px;
   gap: 8px;
   align-items: center;
+}
+
+.activity-settings-row.archived {
+  opacity: 0.58;
 }
 
 .activity-settings-row input,
@@ -227,6 +231,28 @@
 }
 
 .activity-save-button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.activity-archive-button {
+  min-height: 30px;
+  padding: 0 7px;
+  color: var(--peach);
+  border: 1px solid rgba(245, 185, 125, 0.35);
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 9px;
+}
+
+.activity-archive-button:hover:not(:disabled) {
+  color: #ffd0a8;
+  border-color: rgba(245, 185, 125, 0.65);
+  background: rgba(245, 185, 125, 0.06);
+}
+
+.activity-archive-button:disabled {
   cursor: wait;
   opacity: 0.55;
 }
@@ -559,6 +585,12 @@
   .activity-settings-row .activity-save-button {
     grid-column: 3;
     grid-row: 1 / span 2;
+  }
+
+  .activity-settings-row .activity-archive-button {
+    grid-column: 2 / span 2;
+    grid-row: 3;
+    justify-self: start;
   }
 
   .settings-save-card {

@@ -1,6 +1,17 @@
 export type Intensity = 'none' | 'low' | 'medium' | 'high' | 'very-high'
 
-export type ActivityIconName = 'code' | 'database' | 'book' | 'work' | 'notes'
+export type ActivityIconName =
+  | 'code'
+  | 'database'
+  | 'book'
+  | 'work'
+  | 'notes'
+  | 'fitness'
+  | 'design'
+  | 'language'
+  | 'music'
+  | 'personal'
+  | 'study'
 
 export type Activity = {
   name: string

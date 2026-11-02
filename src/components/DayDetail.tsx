@@ -4,8 +4,14 @@ import {
   Check,
   Code2,
   Database,
+  Dumbbell,
+  GraduationCap,
+  Languages,
+  Music2,
   NotebookPen,
+  Palette,
   Plus,
+  UserRound,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { Activity, ActivityIconName, DayRecord } from '../types/tracker'
@@ -33,6 +39,18 @@ function getActivityIcon(icon: ActivityIconName): ReactNode {
       return <BookOpen {...iconProps} />
     case 'work':
       return <BriefcaseBusiness {...iconProps} />
+    case 'fitness':
+      return <Dumbbell {...iconProps} />
+    case 'design':
+      return <Palette {...iconProps} />
+    case 'language':
+      return <Languages {...iconProps} />
+    case 'music':
+      return <Music2 {...iconProps} />
+    case 'personal':
+      return <UserRound {...iconProps} />
+    case 'study':
+      return <GraduationCap {...iconProps} />
     default:
       return <NotebookPen {...iconProps} />
   }
