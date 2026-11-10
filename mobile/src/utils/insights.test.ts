@@ -91,6 +91,16 @@ test('derives productive days, hours, weekdays, and neglected areas', () => {
   equal(neglected[0]?.yearMinutes, 15)
 })
 
+test('groups UTC timestamps by their local start hour', () => {
+  const startedAt = '2026-11-10T20:03:00.000Z'
+  const localHour = new Date(startedAt).getHours()
+  const hours = hourHistogram([
+    session('2026-11-10', 'Java', 60, startedAt),
+  ])
+
+  equal(hours.find((bucket) => bucket.hour === localHour)?.minutes, 60)
+})
+
 test('deduplicates notes and creates bounded highlights', () => {
   const notes: DailyNoteRow[] = [
     { activityDate: '2026-01-05', note: '  Plan the next block  ' },

@@ -1,6 +1,9 @@
+import { Ionicons } from '@expo/vector-icons'
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import {
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -33,6 +36,7 @@ export default function LogActivityScreen() {
   )
   const [startTime, setStartTime] = useState(getDefaultTimeRange().startTime)
   const [endTime, setEndTime] = useState(getDefaultTimeRange().endTime)
+  const [activeTimeField, setActiveTimeField] = useState<TimeFieldKey | null>(null)
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -72,6 +76,27 @@ export default function LogActivityScreen() {
     } finally {
       setIsSaving(false)
     }
+  }
+
+  function toggleTimeField(field: TimeFieldKey) {
+    setActiveTimeField((current) => current === field ? null : field)
+  }
+
+  function handleTimeChange(event: DateTimePickerEvent, selectedDate?: Date) {
+    if (event.type === 'dismissed') {
+      setActiveTimeField(null)
+      return
+    }
+    if (!selectedDate || !activeTimeField) return
+
+    const selectedTime = toTimeValue(selectedDate.getHours() * 60 + selectedDate.getMinutes())
+    if (activeTimeField === 'start') {
+      setStartTime(selectedTime)
+    } else {
+      setEndTime(selectedTime)
+    }
+
+    if (Platform.OS === 'android') setActiveTimeField(null)
   }
 
   return (
@@ -120,33 +145,32 @@ export default function LogActivityScreen() {
         </ScrollView>
 
         <View style={styles.timeRow}>
-          <View style={styles.timeField}>
-            <FieldLabel label="Started at" />
-            <TextInput
-              autoCapitalize="none"
-              keyboardType="numbers-and-punctuation"
-              maxLength={5}
-              onChangeText={setStartTime}
-              placeholder="09:00"
-              placeholderTextColor={colors.textSubtle}
-              style={styles.input}
-              value={startTime}
-            />
-          </View>
-          <View style={styles.timeField}>
-            <FieldLabel label="Ended at" />
-            <TextInput
-              autoCapitalize="none"
-              keyboardType="numbers-and-punctuation"
-              maxLength={5}
-              onChangeText={setEndTime}
-              placeholder="10:00"
-              placeholderTextColor={colors.textSubtle}
-              style={styles.input}
-              value={endTime}
-            />
-          </View>
+          <TimeFieldInput
+            isActive={activeTimeField === 'start'}
+            label="Started at"
+            onChangeText={setStartTime}
+            onPress={() => toggleTimeField('start')}
+            value={startTime}
+          />
+          <TimeFieldInput
+            isActive={activeTimeField === 'end'}
+            label="Ended at"
+            onChangeText={setEndTime}
+            onPress={() => toggleTimeField('end')}
+            value={endTime}
+          />
         </View>
+        {Platform.OS !== 'web' && activeTimeField ? (
+          <View style={styles.timePicker}>
+            <DateTimePicker
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              is24Hour
+              mode="time"
+              onChange={handleTimeChange}
+              value={getTimeDate(activeTimeField === 'start' ? startTime : endTime)}
+            />
+          </View>
+        ) : null}
 
         <View style={styles.durationPreview}>
           <Text style={styles.fieldLabel}>Time spent</Text>
@@ -188,6 +212,54 @@ export default function LogActivityScreen() {
   )
 }
 
+type TimeFieldKey = 'start' | 'end'
+
+function TimeFieldInput({
+  isActive,
+  label,
+  onChangeText,
+  onPress,
+  value,
+}: {
+  isActive: boolean
+  label: string
+  onChangeText: (value: string) => void
+  onPress: () => void
+  value: string
+}) {
+  return (
+    <View style={styles.timeField}>
+      <FieldLabel label={label} />
+      {Platform.OS === 'web' ? (
+        <TextInput
+          autoCapitalize="none"
+          keyboardType="numbers-and-punctuation"
+          maxLength={5}
+          onChangeText={onChangeText}
+          placeholder="09:00"
+          placeholderTextColor={colors.textSubtle}
+          style={styles.input}
+          value={value}
+        />
+      ) : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: isActive }}
+          onPress={onPress}
+          style={({ pressed }) => [
+            styles.timeButton,
+            isActive && styles.timeButtonActive,
+            pressed && styles.timeButtonPressed,
+          ]}
+        >
+          <Text style={styles.timeButtonText}>{value}</Text>
+          <Ionicons color={colors.accent} name="time-outline" size={18} />
+        </Pressable>
+      )}
+    </View>
+  )
+}
+
 function FieldLabel({ label }: { label: string }) {
   return <Text style={styles.fieldLabel}>{label}</Text>
 }
@@ -201,6 +273,13 @@ function toTimeValue(totalMinutes: number) {
   const hours = Math.floor(totalMinutes / 60).toString().padStart(2, '0')
   const minutes = (totalMinutes % 60).toString().padStart(2, '0')
   return `${hours}:${minutes}`
+}
+
+function getTimeDate(time: string) {
+  const [hours = 0, minutes = 0] = time.split(':').map(Number)
+  const date = new Date()
+  date.setHours(hours, minutes, 0, 0)
+  return date
 }
 
 function getDefaultTimeRange() {
@@ -265,6 +344,36 @@ const styles = StyleSheet.create({
   },
   timeField: {
     flex: 1,
+  },
+  timeButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+  },
+  timeButtonActive: {
+    borderColor: colors.accent,
+  },
+  timeButtonPressed: {
+    backgroundColor: colors.border,
+  },
+  timeButtonText: {
+    ...typography.body,
+    color: colors.text,
+  },
+  timePicker: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    marginTop: spacing.sm,
+    overflow: 'hidden',
   },
   durationPreview: {
     backgroundColor: colors.surfaceRaised,

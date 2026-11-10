@@ -477,8 +477,6 @@ function getWeekdayIndex(dateKey: string) {
 
 function parseStartHour(startedAt: string | null) {
   if (!startedAt) return null
-  const match = startedAt.match(/T(\d{2})/)
-  if (match?.[1]) return Number(match[1])
 
   const parsed = new Date(startedAt)
   if (Number.isNaN(parsed.getTime())) return null
